@@ -4,9 +4,8 @@ An advanced TypeScript trading bot for GalaSwap DEX with a unique **prime interv
 
 <img width="1070" height="1259" alt="image" src="https://github.com/user-attachments/assets/984230b9-567a-4469-86ae-a77fd07da106" />
 
-<img width="1066" height="1241" alt="image" src="https://github.com/user-attachments/assets/8f9b983c-a1ea-4314-8ca8-e71939f954ae" />
+<img width="552" height="967" alt="image" src="https://github.com/user-attachments/assets/847049be-92de-48f4-92dc-140fa1ba6081" />
 
-<img width="1092" height="950" alt="image" src="https://github.com/user-attachments/assets/771b68d9-eca5-439a-bcdf-5d0099079c86" />
 
 
 ## Features
