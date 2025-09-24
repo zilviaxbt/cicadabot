@@ -15,6 +15,9 @@ class GalaSwapWebInterface {
         this.initializePrimeControls();
         this.initializeTokenSwapControls();
         this.initializeTokenSwap2Controls();
+        this.setupSwap4EventListeners();
+        this.setupSwap5EventListeners();
+        this.setupSwap6EventListeners();
         this.checkConnection();
         this.loadSettings();
         this.loadTransactionHistory(); // Load transaction history from API
@@ -342,12 +345,13 @@ class GalaSwapWebInterface {
 
     async loadTransactionHistory() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/api/transactions?limit=20`);
+            const response = await fetch(`${this.apiBaseUrl}/api/transactions?limit=500`);
             const result = await response.json();
 
             if (result.success) {
                 this.transactions = result.transactions || [];
                 this.displayTransactions();
+                console.log(`Loaded ${this.transactions.length} transactions for Trophy Room`);
             } else {
                 this.displayTransactionError(result.error);
             }
@@ -378,7 +382,7 @@ class GalaSwapWebInterface {
                     <div class="transaction-info-grid">
                         ${tx.pnl ? `<div class="transaction-pnl">
                             <span class="pnl-label">PnL:</span>
-                            <span class="pnl-value">${tx.pnl}</span>
+                            <span class="pnl-value ${tx.pnl.startsWith('+') ? 'profit-positive' : tx.pnl.startsWith('-') ? 'profit-negative' : ''}">${tx.pnl}</span>
                         </div>` : ''}
                         ${tx.pnlPercentage && tx.pnlPercentage !== 'N/A' ? `<div class="transaction-pnl-percentage">
                             <span class="pnl-label">PnL %:</span>
@@ -397,7 +401,7 @@ class GalaSwapWebInterface {
                             <span class="pnl-value">${(parseFloat(tx.priceImpact) * 100).toFixed(2)}%</span>
                         </div>` : ''}
                     </div>
-                    ${tx.transactionHash ? `<div class="transaction-hash">Hash: <a href="https://galascan.gala.com/tx/${tx.transactionHash}" target="_blank">${tx.transactionHash.substring(0, 20)}...</a></div>` : tx.status === 'failed' ? `<div class="transaction-hash failed">Hash: FAILED TRANSACTION</div>` : ''}
+                    ${tx.transactionHash ? `<div class="transaction-hash">Hash: <a href="https://galascan.gala.com/transaction/${tx.transactionHash}" target="_blank">${tx.transactionHash.substring(0, 20)}...</a></div>` : tx.status === 'failed' ? `<div class="transaction-hash failed">Hash: FAILED TRANSACTION</div>` : ''}
                     ${tx.strategy ? `<div class="transaction-strategy">Strategy: ${tx.strategy}</div>` : ''}
                 </div>
             </div>
@@ -2198,6 +2202,711 @@ class GalaSwapWebInterface {
 
         resultsContainer.innerHTML = resultsHtml;
     }
+
+    // Pool Shark 3 Functions
+    setupSwap4EventListeners() {
+        const startBtn = document.getElementById('startSwap4StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap4StrategyBtn');
+        const refreshBtn = document.getElementById('refreshSwap4StatusBtn');
+
+        if (startBtn) startBtn.addEventListener('click', () => this.startSwap4Strategy());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopSwap4Strategy());
+        if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshSwap4Status());
+
+        // Info modal
+        const infoBtn = document.getElementById('showTokenSwap3Info');
+        if (infoBtn) {
+            infoBtn.addEventListener('click', () => this.showModal('tokenSwap3InfoModal'));
+        }
+
+        // Initial status check
+        this.refreshSwap4Status();
+    }
+
+    async startSwap4Strategy() {
+        try {
+            const config = {
+                tokenIn: document.getElementById('swap4TokenIn').value,
+                tokenOut: document.getElementById('swap4TokenOut').value,
+                amountIn: document.getElementById('swap4Amount').value,
+                slippageTolerance: parseFloat(document.getElementById('swap4Slippage').value),
+                feeTier: parseInt(document.getElementById('swap4FeeTier').value),
+                intervalSeconds: parseInt(document.getElementById('swap4Interval').value),
+                minAmountOut: document.getElementById('swap4MinAmountOut').value,
+                enabled: true
+            };
+
+            if (!config.amountIn || parseFloat(config.amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            if (!config.minAmountOut || parseFloat(config.minAmountOut) < 0) {
+                this.showToast('Please enter a valid minimum amount out threshold', 'error');
+                return;
+            }
+
+            this.showToast('Starting Pool Shark 3...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-3/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ config })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 3 started successfully!', 'success');
+                this.refreshSwap4Status();
+                this.startSwap4ResultsPolling();
+            } else {
+                this.showToast(`Failed to start Pool Shark 3: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error starting Pool Shark 3:', error);
+            this.showToast('Error starting Pool Shark 3', 'error');
+        }
+    }
+
+    async stopSwap4Strategy() {
+        try {
+            this.showToast('Stopping Pool Shark 3...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-3/stop`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 3 stopped successfully!', 'success');
+                this.refreshSwap4Status();
+                this.stopSwap4ResultsPolling();
+            } else {
+                this.showToast(`Failed to stop Pool Shark 3: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error stopping Pool Shark 3:', error);
+            this.showToast('Error stopping Pool Shark 3', 'error');
+        }
+    }
+
+    async refreshSwap4Status() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-3/status`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.updateSwap4Status(result);
+            }
+        } catch (error) {
+            console.error('Error refreshing Pool Shark 3 status:', error);
+        }
+    }
+
+    updateSwap4Status(status) {
+        const statusElement = document.getElementById('swap4Status');
+        const startBtn = document.getElementById('startSwap4StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap4StrategyBtn');
+
+        if (status.isRunning) {
+            statusElement.innerHTML = `
+                <span class="status-dot online"></span>
+                <span>Running</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+            }
+            if (stopBtn) {
+                stopBtn.disabled = false;
+                stopBtn.style.opacity = '1';
+            }
+        } else {
+            statusElement.innerHTML = `
+                <span class="status-dot offline"></span>
+                <span>Stopped</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+            }
+            if (stopBtn) {
+                stopBtn.disabled = true;
+                stopBtn.style.opacity = '0.5';
+            }
+        }
+    }
+
+    startSwap4ResultsPolling() {
+        this.stopSwap4ResultsPolling();
+        this.swap4ResultsInterval = setInterval(() => {
+            this.loadSwap4Results();
+        }, 5000);
+    }
+
+    stopSwap4ResultsPolling() {
+        if (this.swap4ResultsInterval) {
+            clearInterval(this.swap4ResultsInterval);
+            this.swap4ResultsInterval = null;
+        }
+    }
+
+    async loadSwap4Results() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/transactions?limit=50`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displaySwap4Results(data.results);
+            }
+        } catch (error) {
+            console.error('Error loading Pool Shark 3 results:', error);
+        }
+    }
+
+    displaySwap4Results(results) {
+        const resultsContainer = document.getElementById('swap4Results');
+        
+        // Filter results for Pool Shark 3
+        const swap4Results = results.filter(result => 
+            result.type && result.type.includes('Pool Shark 3')
+        );
+
+        if (swap4Results.length === 0) {
+            resultsContainer.innerHTML = '<div class="no-results">No results yet</div>';
+            return;
+        }
+
+        const resultsHtml = swap4Results.slice(-8).map(result => {
+            let statusClass = 'info';
+            let statusIcon = 'fa-info-circle';
+            
+            if (result.action === 'EXECUTED') {
+                statusClass = 'success';
+                statusIcon = 'fa-check-circle';
+            } else if (result.action === 'SKIPPED') {
+                statusClass = 'warning';
+                statusIcon = 'fa-pause-circle';
+            } else if (result.action === 'FAILED' || result.action === 'ERROR' || result.action === 'QUOTE_FAILED') {
+                statusClass = 'error';
+                statusIcon = 'fa-times-circle';
+            }
+            
+            return `
+                <div class="result-item ${statusClass}">
+                    <div class="result-header">
+                        <i class="fas ${statusIcon}"></i>
+                        <span class="result-type">${result.action || 'SWAP'}</span>
+                        <span class="result-time">${new Date(result.timestamp).toLocaleTimeString()}</span>
+                        ${result.swapNumber ? `<span class="result-swap-number">#${result.swapNumber}</span>` : ''}
+                    </div>
+                    <div class="result-details">
+                        <div class="result-pair">${result.tokenIn} → ${result.tokenOut}</div>
+                        <div class="result-amount">Amount: ${result.amount}</div>
+                    </div>
+                    ${result.expectedAmountOut ? `
+                        <div class="result-quote">
+                            <span class="quote-label">Expected:</span>
+                            <span class="quote-value">${result.expectedAmountOut} ${result.tokenOut}</span>
+                            ${result.minAmountOut ? `<span class="quote-threshold">(Min: ${result.minAmountOut})</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${result.amountOut ? `
+                        <div class="result-executed">
+                            <span class="executed-label">Actual:</span>
+                            <span class="executed-value">${result.amountOut} ${result.tokenOut}</span>
+                        </div>
+                    ` : ''}
+                    ${result.transactionHash ? `
+                        <div class="result-tx">
+                            <span class="tx-label">TX:</span>
+                            <span class="tx-hash">${result.transactionHash.substring(0, 10)}...</span>
+                        </div>
+                    ` : ''}
+                    ${result.reason ? `<div class="result-reason">${result.reason}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = resultsHtml;
+    }
+
+    // Pool Shark 4 Functions
+    setupSwap5EventListeners() {
+        const startBtn = document.getElementById('startSwap5StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap5StrategyBtn');
+        const refreshBtn = document.getElementById('refreshSwap5StatusBtn');
+
+        if (startBtn) startBtn.addEventListener('click', () => this.startSwap5Strategy());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopSwap5Strategy());
+        if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshSwap5Status());
+
+        // Info modal
+        const infoBtn = document.getElementById('showTokenSwap4Info');
+        if (infoBtn) {
+            infoBtn.addEventListener('click', () => this.showModal('tokenSwap4InfoModal'));
+        }
+
+        // Initial status check
+        this.refreshSwap5Status();
+    }
+
+    async startSwap5Strategy() {
+        try {
+            const config = {
+                tokenIn: document.getElementById('swap5TokenIn').value,
+                tokenOut: document.getElementById('swap5TokenOut').value,
+                amountIn: document.getElementById('swap5Amount').value,
+                slippageTolerance: parseFloat(document.getElementById('swap5Slippage').value),
+                feeTier: parseInt(document.getElementById('swap5FeeTier').value),
+                intervalSeconds: parseInt(document.getElementById('swap5Interval').value),
+                minAmountOut: document.getElementById('swap5MinAmountOut').value,
+                enabled: true
+            };
+
+            if (!config.amountIn || parseFloat(config.amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            if (!config.minAmountOut || parseFloat(config.minAmountOut) < 0) {
+                this.showToast('Please enter a valid minimum amount out threshold', 'error');
+                return;
+            }
+
+            this.showToast('Starting Pool Shark 4...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-4/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ config })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 4 started successfully!', 'success');
+                this.refreshSwap5Status();
+                this.startSwap5ResultsPolling();
+            } else {
+                this.showToast(`Failed to start Pool Shark 4: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error starting Pool Shark 4:', error);
+            this.showToast('Error starting Pool Shark 4', 'error');
+        }
+    }
+
+    async stopSwap5Strategy() {
+        try {
+            this.showToast('Stopping Pool Shark 4...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-4/stop`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 4 stopped successfully!', 'success');
+                this.refreshSwap5Status();
+                this.stopSwap5ResultsPolling();
+            } else {
+                this.showToast(`Failed to stop Pool Shark 4: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error stopping Pool Shark 4:', error);
+            this.showToast('Error stopping Pool Shark 4', 'error');
+        }
+    }
+
+    async refreshSwap5Status() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-4/status`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.updateSwap5Status(result);
+            }
+        } catch (error) {
+            console.error('Error refreshing Pool Shark 4 status:', error);
+        }
+    }
+
+    updateSwap5Status(status) {
+        const statusElement = document.getElementById('swap5Status');
+        const startBtn = document.getElementById('startSwap5StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap5StrategyBtn');
+
+        if (status.isRunning) {
+            statusElement.innerHTML = `
+                <span class="status-dot online"></span>
+                <span>Running</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+            }
+            if (stopBtn) {
+                stopBtn.disabled = false;
+                stopBtn.style.opacity = '1';
+            }
+        } else {
+            statusElement.innerHTML = `
+                <span class="status-dot offline"></span>
+                <span>Stopped</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+            }
+            if (stopBtn) {
+                stopBtn.disabled = true;
+                stopBtn.style.opacity = '0.5';
+            }
+        }
+    }
+
+    startSwap5ResultsPolling() {
+        this.stopSwap5ResultsPolling();
+        this.swap5ResultsInterval = setInterval(() => {
+            this.loadSwap5Results();
+        }, 5000);
+    }
+
+    stopSwap5ResultsPolling() {
+        if (this.swap5ResultsInterval) {
+            clearInterval(this.swap5ResultsInterval);
+            this.swap5ResultsInterval = null;
+        }
+    }
+
+    async loadSwap5Results() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/transactions?limit=50`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displaySwap5Results(data.results);
+            }
+        } catch (error) {
+            console.error('Error loading Pool Shark 4 results:', error);
+        }
+    }
+
+    displaySwap5Results(results) {
+        const resultsContainer = document.getElementById('swap5Results');
+        
+        // Filter results for Pool Shark 4
+        const swap5Results = results.filter(result => 
+            result.type && result.type.includes('Pool Shark 4')
+        );
+
+        if (swap5Results.length === 0) {
+            resultsContainer.innerHTML = '<div class="no-results">No results yet</div>';
+            return;
+        }
+
+        const resultsHtml = swap5Results.slice(-8).map(result => {
+            let statusClass = 'info';
+            let statusIcon = 'fa-info-circle';
+            
+            if (result.action === 'EXECUTED') {
+                statusClass = 'success';
+                statusIcon = 'fa-check-circle';
+            } else if (result.action === 'SKIPPED') {
+                statusClass = 'warning';
+                statusIcon = 'fa-pause-circle';
+            } else if (result.action === 'FAILED' || result.action === 'ERROR' || result.action === 'QUOTE_FAILED') {
+                statusClass = 'error';
+                statusIcon = 'fa-times-circle';
+            }
+            
+            return `
+                <div class="result-item ${statusClass}">
+                    <div class="result-header">
+                        <i class="fas ${statusIcon}"></i>
+                        <span class="result-type">${result.action || 'SWAP'}</span>
+                        <span class="result-time">${new Date(result.timestamp).toLocaleTimeString()}</span>
+                        ${result.swapNumber ? `<span class="result-swap-number">#${result.swapNumber}</span>` : ''}
+                    </div>
+                    <div class="result-details">
+                        <div class="result-pair">${result.tokenIn} → ${result.tokenOut}</div>
+                        <div class="result-amount">Amount: ${result.amount}</div>
+                    </div>
+                    ${result.expectedAmountOut ? `
+                        <div class="result-quote">
+                            <span class="quote-label">Expected:</span>
+                            <span class="quote-value">${result.expectedAmountOut} ${result.tokenOut}</span>
+                            ${result.minAmountOut ? `<span class="quote-threshold">(Min: ${result.minAmountOut})</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${result.amountOut ? `
+                        <div class="result-executed">
+                            <span class="executed-label">Actual:</span>
+                            <span class="executed-value">${result.amountOut} ${result.tokenOut}</span>
+                        </div>
+                    ` : ''}
+                    ${result.transactionHash ? `
+                        <div class="result-tx">
+                            <span class="tx-label">TX:</span>
+                            <span class="tx-hash">${result.transactionHash.substring(0, 10)}...</span>
+                        </div>
+                    ` : ''}
+                    ${result.reason ? `<div class="result-reason">${result.reason}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = resultsHtml;
+    }
+
+    // Pool Shark 5 Functions
+    setupSwap6EventListeners() {
+        const startBtn = document.getElementById('startSwap6StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap6StrategyBtn');
+        const refreshBtn = document.getElementById('refreshSwap6StatusBtn');
+
+        if (startBtn) startBtn.addEventListener('click', () => this.startSwap6Strategy());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopSwap6Strategy());
+        if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshSwap6Status());
+
+        // Info modal
+        const infoBtn = document.getElementById('showTokenSwap5Info');
+        if (infoBtn) {
+            infoBtn.addEventListener('click', () => this.showModal('tokenSwap5InfoModal'));
+        }
+
+        // Initial status check
+        this.refreshSwap6Status();
+    }
+
+    async startSwap6Strategy() {
+        try {
+            const config = {
+                tokenIn: document.getElementById('swap6TokenIn').value,
+                tokenOut: document.getElementById('swap6TokenOut').value,
+                amountIn: document.getElementById('swap6Amount').value,
+                slippageTolerance: parseFloat(document.getElementById('swap6Slippage').value),
+                feeTier: parseInt(document.getElementById('swap6FeeTier').value),
+                intervalSeconds: parseInt(document.getElementById('swap6Interval').value),
+                minAmountOut: document.getElementById('swap6MinAmountOut').value,
+                enabled: true
+            };
+
+            if (!config.amountIn || parseFloat(config.amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            if (!config.minAmountOut || parseFloat(config.minAmountOut) < 0) {
+                this.showToast('Please enter a valid minimum amount out threshold', 'error');
+                return;
+            }
+
+            this.showToast('Starting Pool Shark 5...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-5/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ config })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 5 started successfully!', 'success');
+                this.refreshSwap6Status();
+                this.startSwap6ResultsPolling();
+            } else {
+                this.showToast(`Failed to start Pool Shark 5: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error starting Pool Shark 5:', error);
+            this.showToast('Error starting Pool Shark 5', 'error');
+        }
+    }
+
+    async stopSwap6Strategy() {
+        try {
+            this.showToast('Stopping Pool Shark 5...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-5/stop`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 5 stopped successfully!', 'success');
+                this.refreshSwap6Status();
+                this.stopSwap6ResultsPolling();
+            } else {
+                this.showToast(`Failed to stop Pool Shark 5: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error stopping Pool Shark 5:', error);
+            this.showToast('Error stopping Pool Shark 5', 'error');
+        }
+    }
+
+    async refreshSwap6Status() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-5/status`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.updateSwap6Status(result);
+            }
+        } catch (error) {
+            console.error('Error refreshing Pool Shark 5 status:', error);
+        }
+    }
+
+    updateSwap6Status(status) {
+        const statusElement = document.getElementById('swap6Status');
+        const startBtn = document.getElementById('startSwap6StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap6StrategyBtn');
+
+        if (status.isRunning) {
+            statusElement.innerHTML = `
+                <span class="status-dot online"></span>
+                <span>Running</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+            }
+            if (stopBtn) {
+                stopBtn.disabled = false;
+                stopBtn.style.opacity = '1';
+            }
+        } else {
+            statusElement.innerHTML = `
+                <span class="status-dot offline"></span>
+                <span>Stopped</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+            }
+            if (stopBtn) {
+                stopBtn.disabled = true;
+                stopBtn.style.opacity = '0.5';
+            }
+        }
+    }
+
+    startSwap6ResultsPolling() {
+        this.stopSwap6ResultsPolling();
+        this.swap6ResultsInterval = setInterval(() => {
+            this.loadSwap6Results();
+        }, 5000);
+    }
+
+    stopSwap6ResultsPolling() {
+        if (this.swap6ResultsInterval) {
+            clearInterval(this.swap6ResultsInterval);
+            this.swap6ResultsInterval = null;
+        }
+    }
+
+    async loadSwap6Results() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/transactions?limit=50`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displaySwap6Results(data.results);
+            }
+        } catch (error) {
+            console.error('Error loading Pool Shark 5 results:', error);
+        }
+    }
+
+    displaySwap6Results(results) {
+        const resultsContainer = document.getElementById('swap6Results');
+        
+        // Filter results for Pool Shark 5
+        const swap6Results = results.filter(result => 
+            result.type && result.type.includes('Pool Shark 5')
+        );
+
+        if (swap6Results.length === 0) {
+            resultsContainer.innerHTML = '<div class="no-results">No results yet</div>';
+            return;
+        }
+
+        const resultsHtml = swap6Results.slice(-8).map(result => {
+            let statusClass = 'info';
+            let statusIcon = 'fa-info-circle';
+            
+            if (result.action === 'EXECUTED') {
+                statusClass = 'success';
+                statusIcon = 'fa-check-circle';
+            } else if (result.action === 'SKIPPED') {
+                statusClass = 'warning';
+                statusIcon = 'fa-pause-circle';
+            } else if (result.action === 'FAILED' || result.action === 'ERROR' || result.action === 'QUOTE_FAILED') {
+                statusClass = 'error';
+                statusIcon = 'fa-times-circle';
+            }
+            
+            return `
+                <div class="result-item ${statusClass}">
+                    <div class="result-header">
+                        <i class="fas ${statusIcon}"></i>
+                        <span class="result-type">${result.action || 'SWAP'}</span>
+                        <span class="result-time">${new Date(result.timestamp).toLocaleTimeString()}</span>
+                        ${result.swapNumber ? `<span class="result-swap-number">#${result.swapNumber}</span>` : ''}
+                    </div>
+                    <div class="result-details">
+                        <div class="result-pair">${result.tokenIn} → ${result.tokenOut}</div>
+                        <div class="result-amount">Amount: ${result.amount}</div>
+                    </div>
+                    ${result.expectedAmountOut ? `
+                        <div class="result-quote">
+                            <span class="quote-label">Expected:</span>
+                            <span class="quote-value">${result.expectedAmountOut} ${result.tokenOut}</span>
+                            ${result.minAmountOut ? `<span class="quote-threshold">(Min: ${result.minAmountOut})</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${result.amountOut ? `
+                        <div class="result-executed">
+                            <span class="executed-label">Actual:</span>
+                            <span class="executed-value">${result.amountOut} ${result.tokenOut}</span>
+                        </div>
+                    ` : ''}
+                    ${result.transactionHash ? `
+                        <div class="result-tx">
+                            <span class="tx-label">TX:</span>
+                            <span class="tx-hash">${result.transactionHash.substring(0, 10)}...</span>
+                        </div>
+                    ` : ''}
+                    ${result.reason ? `<div class="result-reason">${result.reason}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = resultsHtml;
+    }
 }
 
 // Collapsible Panel Functionality
@@ -2219,7 +2928,633 @@ function togglePanel(panelId) {
     }
 }
 
+// Collapsible functionality
+function toggleCollapsible(panelId) {
+    const content = document.getElementById(panelId + 'Content');
+    const toggle = document.querySelector(`[onclick="toggleCollapsible('${panelId}')"] i`);
+    const panel = document.querySelector(`.collapsible-panel:has(#${panelId}Content)`);
+    
+    if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        panel.classList.remove('collapsed');
+        toggle.style.transform = 'rotate(0deg)';
+    } else {
+        content.classList.add('collapsed');
+        panel.classList.add('collapsed');
+        toggle.style.transform = 'rotate(-90deg)';
+    }
+}
+
+// Leaderboard functionality
+class LeaderboardManager {
+    constructor() {
+        this.leaderboardData = [];
+        this.initializeLeaderboard();
+    }
+
+    initializeLeaderboard() {
+        // Load sample data for demonstration
+        this.loadSampleData();
+        this.updateLeaderboard();
+    }
+
+    loadSampleData() {
+        // Sample leaderboard data - in a real app, this would come from an API
+        this.leaderboardData = [
+            {
+                rank: 1,
+                traderName: "CryptoWhale",
+                traderAddress: "0x1234...5678",
+                volume: "$1,234,567",
+                profit: "+$45,678",
+                profitClass: "positive",
+                winRate: "87.5%"
+            },
+            {
+                rank: 2,
+                traderName: "MoonTrader",
+                traderAddress: "0x2345...6789",
+                volume: "$987,654",
+                profit: "+$32,456",
+                profitClass: "positive",
+                winRate: "82.3%"
+            },
+            {
+                rank: 3,
+                traderName: "DiamondHands",
+                traderAddress: "0x3456...7890",
+                volume: "$765,432",
+                profit: "+$28,901",
+                profitClass: "positive",
+                winRate: "79.8%"
+            },
+            {
+                rank: 4,
+                traderName: "DeFiMaster",
+                traderAddress: "0x4567...8901",
+                volume: "$654,321",
+                profit: "+$23,456",
+                profitClass: "positive",
+                winRate: "76.2%"
+            },
+            {
+                rank: 5,
+                traderName: "TokenHunter",
+                traderAddress: "0x5678...9012",
+                volume: "$543,210",
+                profit: "-$1,234",
+                profitClass: "negative",
+                winRate: "68.9%"
+            }
+        ];
+    }
+
+    updateLeaderboard() {
+        this.updateStats();
+        this.updateLeaderboardList();
+    }
+
+    updateStats() {
+        const totalTraders = this.leaderboardData.length;
+        const totalVolume = this.leaderboardData.reduce((sum, trader) => {
+            return sum + parseFloat(trader.volume.replace(/[$,]/g, ''));
+        }, 0);
+        const topPerformer = this.leaderboardData.length > 0 ? this.leaderboardData[0].traderName : '-';
+
+        document.getElementById('totalTraders').textContent = totalTraders;
+        document.getElementById('totalVolume').textContent = `$${totalVolume.toLocaleString()}`;
+        document.getElementById('topPerformer').textContent = topPerformer;
+    }
+
+    updateLeaderboardList() {
+        const entriesContainer = document.getElementById('leaderboardEntries');
+        
+        if (this.leaderboardData.length === 0) {
+            entriesContainer.innerHTML = '<div class="no-data">No trading data available</div>';
+            return;
+        }
+
+        entriesContainer.innerHTML = this.leaderboardData.map(trader => `
+            <div class="leaderboard-entry rank-${trader.rank}">
+                <span class="rank rank-${trader.rank}">${trader.rank}</span>
+                <div class="trader-info">
+                    <div class="trader-avatar">${trader.traderName.charAt(0)}</div>
+                    <div>
+                        <div class="trader-name">${trader.traderName}</div>
+                        <div class="trader-address">${trader.traderAddress}</div>
+                    </div>
+                </div>
+                <span class="volume">${trader.volume}</span>
+                <span class="profit ${trader.profitClass}">${trader.profit}</span>
+                <span class="winrate">${trader.winRate}</span>
+            </div>
+        `).join('');
+    }
+
+    // Method to add new trader data (for real-time updates)
+    addTraderData(traderData) {
+        this.leaderboardData.push(traderData);
+        this.leaderboardData.sort((a, b) => {
+            const aVolume = parseFloat(a.volume.replace(/[$,]/g, ''));
+            const bVolume = parseFloat(b.volume.replace(/[$,]/g, ''));
+            return bVolume - aVolume;
+        });
+        
+        // Update ranks
+        this.leaderboardData.forEach((trader, index) => {
+            trader.rank = index + 1;
+        });
+        
+        this.updateLeaderboard();
+    }
+
+    // Method to refresh leaderboard data from API
+    async refreshFromAPI() {
+        try {
+            // In a real implementation, this would fetch from your API
+            // const response = await fetch('/api/leaderboard');
+            // const data = await response.json();
+            // this.leaderboardData = data;
+            // this.updateLeaderboard();
+            
+            console.log('Leaderboard data refreshed');
+        } catch (error) {
+            console.error('Failed to refresh leaderboard:', error);
+        }
+    }
+}
+
+// Trophy Room functionality
+class TrophyRoomManager {
+    constructor() {
+        this.trophyTransactions = [];
+        this.initializeTrophyRoom();
+    }
+
+    initializeTrophyRoom() {
+        // Listen for transaction updates from the main interface
+        this.setupTransactionListener();
+        this.updateTrophyRoom();
+        this.updateGraveyard();
+    }
+
+    setupTransactionListener() {
+        // Set up a more reliable way to listen for transaction updates
+        // We'll check for updates periodically and also hook into the refresh button
+        this.setupPeriodicUpdate();
+        this.setupRefreshListener();
+    }
+
+    setupPeriodicUpdate() {
+        // Update trophy room and graveyard every 5 seconds to catch new transactions
+        setInterval(() => {
+            this.updateTrophyRoom();
+            this.updateGraveyard();
+        }, 5000);
+    }
+
+    setupRefreshListener() {
+        // Listen for transaction refresh button clicks
+        const refreshButton = document.getElementById('refreshTransactions');
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => {
+                // Wait a bit for the transaction data to load, then update trophy room and graveyard
+                setTimeout(() => {
+                    this.updateTrophyRoom();
+                    this.updateGraveyard();
+                }, 1000);
+            });
+        }
+
+        // Listen for trophy room refresh button clicks
+        const trophyRefreshButton = document.getElementById('refreshTrophyRoom');
+        if (trophyRefreshButton) {
+            trophyRefreshButton.addEventListener('click', () => {
+                console.log('Manually refreshing Trophy Room...');
+                // First refresh the transaction data, then update trophy room
+                if (window.galaSwapInterface) {
+                    window.galaSwapInterface.loadTransactionHistory().then(() => {
+                        this.updateTrophyRoom();
+                    });
+                } else {
+                    this.updateTrophyRoom();
+                }
+            });
+        }
+
+        // Listen for graveyard refresh button clicks
+        const graveyardRefreshButton = document.getElementById('refreshGraveyard');
+        if (graveyardRefreshButton) {
+            graveyardRefreshButton.addEventListener('click', () => {
+                console.log('Manually refreshing The Graveyard...');
+                // First refresh the transaction data, then update graveyard
+                if (window.galaSwapInterface) {
+                    window.galaSwapInterface.loadTransactionHistory().then(() => {
+                        this.updateGraveyard();
+                    });
+                } else {
+                    this.updateGraveyard();
+                }
+            });
+        }
+
+    }
+
+    filterHighPerformingTransactions(transactions) {
+        console.log(`Filtering ${transactions.length} transactions for Trophy Room`);
+        console.log('Sample transaction data:', transactions[0]); // Log first transaction for debugging
+        
+        const filtered = transactions.filter(tx => {
+            // Log all transaction details for debugging
+            console.log(`Checking transaction:`, {
+                hash: tx.transactionHash || tx.hash,
+                status: tx.status,
+                pnlPercentage: tx.pnlPercentage,
+                pnl: tx.pnl,
+                tokenIn: tx.tokenIn,
+                tokenOut: tx.tokenOut,
+                amountIn: tx.amountIn,
+                amountOut: tx.amountOut
+            });
+            
+            // Exclude failed transactions
+            if (tx.status === 'failed') {
+                console.log(`❌ Transaction ${tx.transactionHash || tx.hash || 'unknown'} excluded: failed transaction`);
+                return false;
+            }
+            
+            // Exclude transactions without a valid hash (likely failed or incomplete)
+            if (!tx.transactionHash && !tx.hash) {
+                console.log(`❌ Transaction excluded: no transaction hash (likely failed or incomplete)`);
+                return false;
+            }
+            
+            // Exclude transactions with "FAILED TRANSACTION" hash
+            if ((tx.transactionHash && tx.transactionHash.includes('FAILED')) || 
+                (tx.hash && tx.hash.includes('FAILED'))) {
+                console.log(`❌ Transaction excluded: failed transaction hash detected`);
+                return false;
+            }
+            
+            if (!tx.pnlPercentage || tx.pnlPercentage === 'N/A') {
+                console.log(`❌ Transaction ${tx.transactionHash || tx.hash || 'unknown'} excluded: no PnL percentage`);
+                return false;
+            }
+            
+            // Extract numeric value from PnL percentage string (e.g., "+15.5%" -> 15.5)
+            const pnlMatch = tx.pnlPercentage.match(/[+-]?(\d+\.?\d*)/);
+            if (!pnlMatch) {
+                console.log(`❌ Transaction ${tx.transactionHash || tx.hash || 'unknown'} excluded: invalid PnL format: ${tx.pnlPercentage}`);
+                return false;
+            }
+            
+            // Extract the full signed value from PnL percentage (e.g., "+15.5%" -> 15.5, "-10.2%" -> -10.2)
+            const fullPnlMatch = tx.pnlPercentage.match(/^([+-]?)(\d+\.?\d*)/);
+            const pnlValue = fullPnlMatch ? parseFloat(fullPnlMatch[1] + fullPnlMatch[2]) : 0;
+            const isHighPerforming = pnlValue > 10;
+            
+            if (isHighPerforming) {
+                console.log(`✅ Trophy transaction found: ${tx.pnlPercentage} (${pnlValue}%) - ${tx.tokenIn} → ${tx.tokenOut} - Hash: ${tx.transactionHash || tx.hash}`);
+            } else {
+                console.log(`❌ Transaction excluded: ${tx.pnlPercentage} (${pnlValue}%) - below 10% threshold`);
+            }
+            
+            return isHighPerforming; // Only include transactions with PnL > 10%
+        });
+        
+        console.log(`Found ${filtered.length} high-performing transactions out of ${transactions.length} total`);
+        return filtered;
+    }
+
+    updateTrophyRoom() {
+        // Get transactions from the main interface
+        const allTransactions = window.galaSwapInterface?.transactions || [];
+        this.trophyTransactions = this.filterHighPerformingTransactions(allTransactions);
+        
+        this.updateTrophyStats();
+        this.updateTrophyList();
+    }
+
+    updateTrophyStats() {
+        const highPerformersCount = this.trophyTransactions.length;
+        
+        let bestPnlPercentage = '0%';
+        let bestPnlDollar = '$0';
+        let totalProfit = 0;
+        
+        if (this.trophyTransactions.length > 0) {
+            // Find best PnL percentage
+            const bestPnlPercentageTx = this.trophyTransactions.reduce((best, current) => {
+                const bestPnlValue = parseFloat(best.pnlPercentage.match(/[+-]?(\d+\.?\d*)/)?.[1] || 0);
+                const currentPnlValue = parseFloat(current.pnlPercentage.match(/[+-]?(\d+\.?\d*)/)?.[1] || 0);
+                return currentPnlValue > bestPnlValue ? current : best;
+            });
+            bestPnlPercentage = bestPnlPercentageTx.pnlPercentage;
+            
+            // Find best PnL dollar amount
+            const bestPnlDollarTx = this.trophyTransactions.reduce((best, current) => {
+                const bestPnlValue = parseFloat(best.pnl?.replace(/[$,]/g, '') || 0);
+                const currentPnlValue = parseFloat(current.pnl?.replace(/[$,]/g, '') || 0);
+                return currentPnlValue > bestPnlValue ? current : best;
+            });
+            bestPnlDollar = bestPnlDollarTx.pnl || '$0';
+            
+            // Calculate total profit from PnL
+            totalProfit = this.trophyTransactions.reduce((sum, tx) => {
+                if (tx.pnl) {
+                    const pnlValue = parseFloat(tx.pnl.replace(/[$,]/g, ''));
+                    return sum + (isNaN(pnlValue) ? 0 : pnlValue);
+                }
+                return sum;
+            }, 0);
+        }
+
+        document.getElementById('highPerformersCount').textContent = highPerformersCount;
+        document.getElementById('bestPnlPercentage').textContent = bestPnlPercentage;
+        document.getElementById('bestPnlDollar').textContent = bestPnlDollar;
+        document.getElementById('totalTrophyProfit').textContent = `$${totalProfit.toLocaleString()}`;
+    }
+
+    updateTrophyList() {
+        const percentageContainer = document.getElementById('trophyEntriesPercentage');
+        const dollarContainer = document.getElementById('trophyEntriesDollar');
+        
+        if (this.trophyTransactions.length === 0) {
+            percentageContainer.innerHTML = '<div class="no-trophies">No high-performing trades yet</div>';
+            dollarContainer.innerHTML = '<div class="no-trophies">No high-performing trades yet</div>';
+            return;
+        }
+
+        // Sort by PnL percentage (highest first, including negative values)
+        const sortedByPercentage = [...this.trophyTransactions].sort((a, b) => {
+            // Extract the full signed value from PnL percentage (e.g., "+15.5%" -> 15.5, "-10.2%" -> -10.2)
+            const aPnlMatch = a.pnlPercentage.match(/^([+-]?)(\d+\.?\d*)/);
+            const bPnlMatch = b.pnlPercentage.match(/^([+-]?)(\d+\.?\d*)/);
+            
+            const aPnl = aPnlMatch ? parseFloat(aPnlMatch[1] + aPnlMatch[2]) : 0;
+            const bPnl = bPnlMatch ? parseFloat(bPnlMatch[1] + bPnlMatch[2]) : 0;
+            
+            return bPnl - aPnl; // Sort highest to lowest (positive values first, then negative)
+        });
+
+        // Sort by PnL dollar amount (highest first)
+        const sortedByDollar = [...this.trophyTransactions].sort((a, b) => {
+            const aPnlDollar = parseFloat(a.pnl?.replace(/[$,]/g, '') || 0);
+            const bPnlDollar = parseFloat(b.pnl?.replace(/[$,]/g, '') || 0);
+            return bPnlDollar - aPnlDollar;
+        });
+
+        // Update percentage rankings
+        percentageContainer.innerHTML = sortedByPercentage.map((tx, index) => {
+            return this.createTrophyEntry(tx, index + 1);
+        }).join('');
+
+        // Update dollar rankings
+        dollarContainer.innerHTML = sortedByDollar.map((tx, index) => {
+            return this.createTrophyEntry(tx, index + 1);
+        }).join('');
+    }
+
+    createTrophyEntry(tx, rank) {
+        const pnlClass = tx.pnlPercentage.startsWith('+') ? 'positive' : 'negative';
+        const isExceptional = rank <= 3; // Highlight top 3 positions
+        
+        return `
+            <div class="trophy-entry ${isExceptional ? 'exceptional' : ''}">
+                <span class="trophy-rank">${this.getTrophyEmoji(rank)}</span>
+                <div class="trophy-pair">
+                    <div class="trophy-pair-main">${tx.tokenIn} → ${tx.tokenOut}</div>
+                    <div class="trophy-pair-details">${tx.amountIn} → ${tx.amountOut}</div>
+                </div>
+                <div class="trophy-hash">
+                    ${tx.transactionHash ? `<a href="https://galascan.gala.com/transaction/${tx.transactionHash}" target="_blank" title="View on GalaScan">${tx.transactionHash.substring(0, 8)}...${tx.transactionHash.substring(tx.transactionHash.length - 6)}</a>` : '<span style="color: #ff4757;">No Hash</span>'}
+                </div>
+                <div class="trophy-cost">${tx.amountIn} ${tx.tokenIn}</div>
+                <span class="trophy-pnl ${pnlClass}">${tx.pnlPercentage}</span>
+                <span class="trophy-profit">${tx.pnl || 'N/A'}</span>
+                <span class="trophy-time">${this.formatTrophyTime(tx.timestamp)}</span>
+            </div>
+        `;
+    }
+
+    getTrophyEmoji(rank) {
+        if (rank === 1) return '🥇';
+        if (rank === 2) return '🥈';
+        if (rank === 3) return '🥉';
+        return '🏆';
+    }
+
+    formatTrophyTime(timestamp) {
+        if (!timestamp) return 'N/A';
+        
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        
+        return date.toLocaleDateString();
+    }
+
+    // Method to manually refresh trophy room
+    refreshTrophyRoom() {
+        this.updateTrophyRoom();
+    }
+
+    // Method to add a new high-performing transaction
+    addTrophyTransaction(transaction) {
+        if (this.filterHighPerformingTransactions([transaction]).length > 0) {
+            this.trophyTransactions.push(transaction);
+            this.updateTrophyRoom();
+        }
+    }
+
+    // Debug method to search for a specific transaction by hash
+    searchTransactionByHash(hash) {
+        const allTransactions = window.galaSwapInterface?.transactions || [];
+        const found = allTransactions.find(tx => 
+            (tx.transactionHash && tx.transactionHash.includes(hash)) || 
+            (tx.hash && tx.hash.includes(hash))
+        );
+        
+        if (found) {
+            console.log('Found transaction:', found);
+            const isHighPerforming = this.filterHighPerformingTransactions([found]).length > 0;
+            console.log(`Is high performing (PnL > 10%): ${isHighPerforming}`);
+            return found;
+        } else {
+            console.log(`Transaction with hash ${hash} not found in current data`);
+            return null;
+        }
+    }
+
+    // ===== GRAVEYARD FUNCTIONS =====
+    
+    filterWorstPerformingTransactions(transactions) {
+        console.log(`Filtering ${transactions.length} transactions for The Graveyard`);
+        
+        const filtered = transactions.filter(tx => {
+            // Only include completed transactions with negative PnL
+            if (tx.status !== 'completed') return false;
+            
+            // Check if PnL percentage is negative
+            const pnlPercentage = parseFloat(tx.pnlPercentage);
+            if (isNaN(pnlPercentage) || pnlPercentage >= 0) return false;
+            
+            // Check if PnL dollar amount is negative
+            const pnlDollar = parseFloat(tx.pnl?.replace(/[$,]/g, ''));
+            if (isNaN(pnlDollar) || pnlDollar >= 0) return false;
+            
+            return true;
+        });
+        
+        console.log(`Found ${filtered.length} worst-performing transactions out of ${transactions.length} total`);
+        return filtered;
+    }
+
+    updateGraveyard() {
+        // Get transactions from the main interface
+        const allTransactions = window.galaSwapInterface?.transactions || [];
+        console.log(`Graveyard: Processing ${allTransactions.length} transactions`);
+        this.graveyardTransactions = this.filterWorstPerformingTransactions(allTransactions);
+        console.log(`Graveyard: Found ${this.graveyardTransactions.length} worst-performing transactions`);
+        
+        this.updateGraveyardStats();
+        this.updateGraveyardList();
+    }
+
+    updateGraveyardStats() {
+        const worstPerformersCount = this.graveyardTransactions.length;
+        
+        let worstPnlPercentage = '0%';
+        let worstPnlDollar = '$0.00';
+        let totalLoss = 0;
+        
+        if (this.graveyardTransactions.length > 0) {
+            // Find worst PnL percentage
+            const worstPnl = Math.min(...this.graveyardTransactions.map(tx => {
+                const pnl = parseFloat(tx.pnlPercentage);
+                return isNaN(pnl) ? 0 : pnl;
+            }));
+            worstPnlPercentage = `${worstPnl.toFixed(2)}%`;
+            
+            // Find worst PnL dollar amount
+            const worstPnlDollarValue = Math.min(...this.graveyardTransactions.map(tx => {
+                const pnl = parseFloat(tx.pnl?.replace(/[$,]/g, ''));
+                return isNaN(pnl) ? 0 : pnl;
+            }));
+            worstPnlDollar = `$${worstPnlDollarValue.toFixed(4)}`;
+            
+            // Calculate total loss
+            totalLoss = this.graveyardTransactions.reduce((sum, tx) => {
+                const pnl = parseFloat(tx.pnl?.replace(/[$,]/g, ''));
+                return sum + (isNaN(pnl) ? 0 : Math.abs(pnl));
+            }, 0);
+        }
+        
+        document.getElementById('worstPerformersCount').textContent = worstPerformersCount;
+        document.getElementById('worstPnlPercentage').textContent = worstPnlPercentage;
+        document.getElementById('worstPnlDollar').textContent = worstPnlDollar;
+        document.getElementById('totalLoss').textContent = `$${totalLoss.toFixed(2)}`;
+    }
+
+    updateGraveyardList() {
+        // Sort by worst PnL percentage (most negative first)
+        const sortedByPercentage = [...this.graveyardTransactions].sort((a, b) => {
+            const pnlA = parseFloat(a.pnlPercentage);
+            const pnlB = parseFloat(b.pnlPercentage);
+            return pnlA - pnlB; // Most negative first
+        });
+
+        // Sort by worst PnL dollar amount (most negative first)
+        const sortedByDollar = [...this.graveyardTransactions].sort((a, b) => {
+            const pnlA = parseFloat(a.pnl?.replace(/[$,]/g, ''));
+            const pnlB = parseFloat(b.pnl?.replace(/[$,]/g, ''));
+            return pnlA - pnlB; // Most negative first
+        });
+
+        this.displayGraveyardEntries('graveyardEntriesPercentage', sortedByPercentage);
+        this.displayGraveyardEntries('graveyardEntriesDollar', sortedByDollar);
+    }
+
+    displayGraveyardEntries(containerId, transactions) {
+        const container = document.getElementById(containerId);
+        console.log(`Graveyard: Displaying ${transactions.length} transactions in ${containerId}`);
+        
+        if (transactions.length === 0) {
+            container.innerHTML = '<div class="no-graveyard">No losses to bury yet</div>';
+            return;
+        }
+
+        container.innerHTML = transactions.slice(0, 10).map((tx, index) => {
+            const rank = index + 1;
+            const pnlClass = 'negative'; // All graveyard entries are negative
+            
+            // Only highlight top 3 positions
+            let highlightClass = '';
+            if (rank === 1) {
+                highlightClass = 'catastrophic'; // 1st place - worst loss
+            } else if (rank === 2) {
+                highlightClass = 'severe'; // 2nd place
+            } else if (rank === 3) {
+                highlightClass = 'negative'; // 3rd place
+            }
+            
+            return `
+            <div class="graveyard-entry ${highlightClass}">
+                <span class="graveyard-rank">${this.getGraveyardEmoji(rank)}</span>
+                <div class="graveyard-pair">
+                    <div class="graveyard-pair-main">${tx.tokenIn} → ${tx.tokenOut}</div>
+                    <div class="graveyard-pair-details">${tx.amountIn} → ${tx.amountOut}</div>
+                </div>
+                <div class="graveyard-hash">
+                    ${tx.transactionHash ? `<a href="https://galascan.gala.com/transaction/${tx.transactionHash}" target="_blank" title="View on GalaScan">${tx.transactionHash.substring(0, 8)}...${tx.transactionHash.substring(tx.transactionHash.length - 6)}</a>` : '<span style="color: #ff4757;">No Hash</span>'}
+                </div>
+                <div class="graveyard-cost">${tx.amountIn} ${tx.tokenIn}</div>
+                <span class="graveyard-pnl ${pnlClass}">${tx.pnlPercentage}</span>
+                <span class="graveyard-profit">${tx.pnl || 'N/A'}</span>
+                <span class="graveyard-time">${this.formatTrophyTime(tx.timestamp)}</span>
+            </div>
+        `;
+        }).join('');
+    }
+
+    getGraveyardEmoji(rank) {
+        const emojis = ['💀', '☠️', '🪦', '⚰️', '🕳️', '🔥', '💥', '⚡', '🌪️', '🌋'];
+        return emojis[Math.min(rank - 1, emojis.length - 1)] || '💀';
+    }
+
+    // Method to manually refresh graveyard
+    refreshGraveyard() {
+        this.updateGraveyard();
+    }
+
+    // Method to add a new worst-performing transaction
+    addGraveyardTransaction(transaction) {
+        if (this.filterWorstPerformingTransactions([transaction]).length > 0) {
+            this.graveyardTransactions.push(transaction);
+            this.updateGraveyard();
+        }
+    }
+
+}
+
 // Initialize the web interface when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    new GalaSwapWebInterface();
+    window.galaSwapInterface = new GalaSwapWebInterface();
+    new LeaderboardManager();
+    window.trophyRoomManager = new TrophyRoomManager();
+    window.graveyardManager = new TrophyRoomManager(); // Reuse the same class for graveyard
+    
+    // Ensure graveyard is properly initialized
+    setTimeout(() => {
+        if (window.graveyardManager) {
+            window.graveyardManager.updateGraveyard();
+        }
+    }, 2000); // Wait for transaction data to load
 });
