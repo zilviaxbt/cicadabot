@@ -412,10 +412,13 @@ export class CicadaBot {
           '1', // 1 GALA
           FEE_TIERS.LOW // Use working fee tier
         );
-        prices['GALA'] = parseFloat(galaUsdcQuote.outTokenAmount.toString());
+        // The quote gives us USDC amount for 1 GALA, which is the GALA price in USD
+        const galaPrice = parseFloat(galaUsdcQuote.outTokenAmount.toString());
+        prices['GALA'] = galaPrice;
+        this.logger.debug(`GALA price calculated: $${galaPrice}`);
       } catch (error) {
         this.logger.debug('Failed to get GALA price, using fallback', error);
-        prices['GALA'] = 0.017; // Fallback price
+        prices['GALA'] = 0.0063; // Updated fallback price based on current market
       }
 
       // Get ETH price from ETH/USDC pool (if available)
@@ -479,12 +482,12 @@ export class CicadaBot {
   public async startArbitrageStrategy(strategyName: string, config: any = {}) {
     try {
       // For non-Pool Shark strategies, stop any existing strategy
-      if (strategyName !== 'token-swap' && strategyName !== 'token-swap-2' && this.currentStrategy) {
+      if (!['token-swap', 'token-swap-2', 'token-swap-3', 'token-swap-4', 'token-swap-5'].includes(strategyName) && this.currentStrategy) {
         await this.stopArbitrageStrategy();
       }
       
       // For Pool Shark strategies, check if already running
-      if ((strategyName === 'token-swap' || strategyName === 'token-swap-2') && this.strategies.has(strategyName)) {
+      if (['token-swap', 'token-swap-2', 'token-swap-3', 'token-swap-4', 'token-swap-5'].includes(strategyName) && this.strategies.has(strategyName)) {
         this.logger.warn(`Strategy '${strategyName}' is already running`);
         return;
       }
@@ -530,6 +533,18 @@ export class CicadaBot {
           const { TokenSwap2Strategy } = await import('./strategies/TokenSwap2Strategy');
           StrategyClass = TokenSwap2Strategy;
           break;
+        case 'token-swap-3':
+          const { TokenSwap3Strategy } = await import('./strategies/TokenSwap3Strategy');
+          StrategyClass = TokenSwap3Strategy;
+          break;
+        case 'token-swap-4':
+          const { TokenSwap4Strategy } = await import('./strategies/TokenSwap4Strategy');
+          StrategyClass = TokenSwap4Strategy;
+          break;
+        case 'token-swap-5':
+          const { TokenSwap5Strategy } = await import('./strategies/TokenSwap5Strategy');
+          StrategyClass = TokenSwap5Strategy;
+          break;
         default:
           throw new Error(`Unknown strategy: ${strategyName}`);
       }
@@ -568,6 +583,42 @@ export class CicadaBot {
             enabled: true,
             ...config
           };
+        } else if (strategyName === 'token-swap-3') {
+          defaultConfig = {
+            tokenIn: 'GETH|Unit|none|none',
+            tokenOut: 'GUSDC|Unit|none|none',
+            amountIn: '0.1',
+            slippageTolerance: 1.0,
+            feeTier: 500,
+            intervalSeconds: 45,
+            minAmountOut: '200',
+            enabled: true,
+            ...config
+          };
+        } else if (strategyName === 'token-swap-4') {
+          defaultConfig = {
+            tokenIn: 'GUSDT|Unit|none|none',
+            tokenOut: 'GALA|Unit|none|none',
+            amountIn: '50',
+            slippageTolerance: 1.0,
+            feeTier: 500,
+            intervalSeconds: 60,
+            minAmountOut: '500',
+            enabled: true,
+            ...config
+          };
+        } else if (strategyName === 'token-swap-5') {
+          defaultConfig = {
+            tokenIn: 'GALA|Unit|none|none',
+            tokenOut: 'GETH|Unit|none|none',
+            amountIn: '100',
+            slippageTolerance: 1.0,
+            feeTier: 500,
+            intervalSeconds: 90,
+            minAmountOut: '0.05',
+            enabled: true,
+            ...config
+          };
         } else if (strategyName === 'lunar') {
         defaultConfig = {
           minTradeAmount: '10',
@@ -603,7 +654,7 @@ export class CicadaBot {
       await strategyInstance.start();
 
       // Store strategy instance
-      if (strategyName === 'token-swap' || strategyName === 'token-swap-2') {
+      if (['token-swap', 'token-swap-2', 'token-swap-3', 'token-swap-4', 'token-swap-5'].includes(strategyName)) {
         this.strategies.set(strategyName, strategyInstance);
       } else {
         this.currentStrategy = strategyInstance;
@@ -631,7 +682,7 @@ export class CicadaBot {
     try {
       if (strategyName) {
         // Stop specific strategy
-        if (strategyName === 'token-swap' || strategyName === 'token-swap-2') {
+        if (['token-swap', 'token-swap-2', 'token-swap-3', 'token-swap-4', 'token-swap-5'].includes(strategyName)) {
           const strategy = this.strategies.get(strategyName);
           if (!strategy) {
             this.logger.warn(`Strategy '${strategyName}' is not running`);
@@ -757,7 +808,7 @@ export class CicadaBot {
    * Get specific strategy instance
    */
   public getStrategy(strategyName: string) {
-    if (strategyName === 'token-swap' || strategyName === 'token-swap-2') {
+    if (['token-swap', 'token-swap-2', 'token-swap-3', 'token-swap-4', 'token-swap-5'].includes(strategyName)) {
       return this.strategies.get(strategyName);
     }
     return this.currentStrategy;
@@ -873,6 +924,25 @@ export class CicadaBot {
   }
 
   /**
+   * Recalculate PnL for a transaction (defaults to most recent)
+   */
+  public async recalculateTransaction(id?: string): Promise<TransactionRecord | undefined> {
+    const tx = id ? this.transactionHistory.find(t => t.id === id) : this.transactionHistory[0];
+    if (!tx) return undefined;
+    if (tx.type !== 'swap') return tx;
+
+    const tokenInKey = Object.values(COMMON_TOKENS).find(k => getTokenSymbol(k) === tx.tokenIn) || tx.tokenIn;
+    const tokenOutKey = Object.values(COMMON_TOKENS).find(k => getTokenSymbol(k) === tx.tokenOut) || tx.tokenOut;
+
+    const pnl = await this.calculateSwapPnL(tx.amountIn, tx.amountOut, tokenInKey, tokenOutKey);
+    tx.pnl = pnl.absolute;
+    tx.pnlPercentage = pnl.percentage;
+    this.saveTransactionHistory();
+    this.logger.info('Recalculated transaction PnL', { id: tx.id, pnl: tx.pnl, pnlPercentage: tx.pnlPercentage });
+    return tx;
+  }
+
+  /**
    * Calculate Profit or Loss for a swap transaction
    * This uses real-time prices from pools and includes gas fees
    */
@@ -886,14 +956,101 @@ export class CicadaBot {
         return { absolute: '0', percentage: '0' };
       }
       
-      // Get real-time prices from pools
+      // Try to value both legs directly in USDC using quotes for the exact amounts.
+      // This is more reliable than per-token price snapshots and prevents sign mistakes.
+      let inputUSD: BigNumber | null = null;
+      let outputUSD: BigNumber | null = null;
+
+      try {
+        if (tokenInSymbol === 'USDC') {
+          inputUSD = new BigNumber(amountIn);
+        } else {
+          const inClassKey = tokenInSymbol === 'GALA' ? COMMON_TOKENS.GALA
+                            : tokenInSymbol === 'USDT' ? COMMON_TOKENS.GUSDT
+                            : tokenInSymbol === 'ETH' ? COMMON_TOKENS.GETH
+                            : tokenInSymbol === 'WBTC' ? COMMON_TOKENS.GWBTC
+                            : undefined;
+          if (inClassKey) {
+            const inQuote = await this.gswap.quoting.quoteExactInput(
+              inClassKey,
+              COMMON_TOKENS.GUSDC,
+              amountIn,
+              FEE_TIERS.LOW
+            );
+            inputUSD = new BigNumber(inQuote.outTokenAmount.toString());
+          }
+        }
+      } catch (e) {
+        // fall back to snapshot pricing below
+        inputUSD = null;
+      }
+
+      try {
+        if (tokenOutSymbol === 'USDC') {
+          outputUSD = new BigNumber(amountOut);
+        } else {
+          const outClassKey = tokenOutSymbol === 'GALA' ? COMMON_TOKENS.GALA
+                             : tokenOutSymbol === 'USDT' ? COMMON_TOKENS.GUSDT
+                             : tokenOutSymbol === 'ETH' ? COMMON_TOKENS.GETH
+                             : tokenOutSymbol === 'WBTC' ? COMMON_TOKENS.GWBTC
+                             : undefined;
+          if (outClassKey) {
+            const outQuote = await this.gswap.quoting.quoteExactInput(
+              outClassKey,
+              COMMON_TOKENS.GUSDC,
+              amountOut,
+              FEE_TIERS.LOW
+            );
+            outputUSD = new BigNumber(outQuote.outTokenAmount.toString());
+          }
+        }
+      } catch (e) {
+        // fall back to snapshot pricing below
+        outputUSD = null;
+      }
+
+      // If direct valuation failed for either side, fall back to snapshot prices
+      if (inputUSD === null || outputUSD === null) {
+        const tokenPrices = await this.getTokenPrices();
+        const inputPrice = tokenPrices[tokenInSymbol] || 0;
+        const outputPrice = tokenPrices[tokenOutSymbol] || 0;
+
+        // If we don't have price data for either token, show exchange rate
+        if (inputPrice === 0 || outputPrice === 0) {
+          const inputAmount = new BigNumber(amountIn);
+          const outputAmount = new BigNumber(amountOut);
+          const exchangeRate = outputAmount.dividedBy(inputAmount);
+          return { 
+            absolute: `${exchangeRate.toFixed(6)} ${tokenOutSymbol}/${tokenInSymbol}`, 
+            percentage: 'N/A'
+          };
+        }
+
+        const inputAmount = new BigNumber(amountIn);
+        const outputAmount = new BigNumber(amountOut);
+        inputUSD = inputUSD ?? inputAmount.multipliedBy(inputPrice);
+        outputUSD = outputUSD ?? outputAmount.multipliedBy(outputPrice);
+      }
+      
+      // At this point we have inputUSD and outputUSD
+      const inputUSDVal = inputUSD as BigNumber;
+      const outputUSDVal = outputUSD as BigNumber;
+      
+      // Debug logging
+      this.logger.debug(`PnL Calculation Debug:`, {
+        tokenIn: tokenInSymbol,
+        tokenOut: tokenOutSymbol,
+        amountIn: amountIn,
+        amountOut: amountOut,
+        inputUSD: inputUSDVal.toString(),
+        outputUSD: outputUSDVal.toString()
+      });
+      
+      // Get GALA price for gas estimation (fallback included)
       const tokenPrices = await this.getTokenPrices();
       
-      const inputPrice = tokenPrices[tokenInSymbol] || 0;
-      const outputPrice = tokenPrices[tokenOutSymbol] || 0;
-      
       // If we don't have price data for either token, show exchange rate
-      if (inputPrice === 0 || outputPrice === 0) {
+      if (!inputUSDVal || !outputUSDVal) {
         const inputAmount = new BigNumber(amountIn);
         const outputAmount = new BigNumber(amountOut);
         const exchangeRate = outputAmount.dividedBy(inputAmount);
@@ -903,19 +1060,13 @@ export class CicadaBot {
         };
       }
       
-      // Calculate USD values
-      const inputAmount = new BigNumber(amountIn);
-      const outputAmount = new BigNumber(amountOut);
-      const inputUSD = inputAmount.multipliedBy(inputPrice);
-      const outputUSD = outputAmount.multipliedBy(outputPrice);
-      
       // Calculate gas fee in USD (1 GALA per transaction)
       const gasFeeGALA = new BigNumber(1);
-      const gasFeeUSD = gasFeeGALA.multipliedBy(tokenPrices['GALA'] || 0.017);
+      const gasFeeUSD = gasFeeGALA.multipliedBy(tokenPrices['GALA'] || 0.0153);
       
       // Calculate PnL including gas fees
-      const pnlUSD = outputUSD.minus(inputUSD).minus(gasFeeUSD);
-      const pnlPercentage = inputUSD.isZero() ? 0 : pnlUSD.dividedBy(inputUSD).multipliedBy(100);
+      const pnlUSD = outputUSDVal.minus(inputUSDVal).minus(gasFeeUSD);
+      const pnlPercentage = inputUSDVal.isZero() ? 0 : pnlUSD.dividedBy(inputUSDVal).multipliedBy(100);
       
       // Format the results
       const pnlSign = pnlUSD.isPositive() ? '+' : '';
