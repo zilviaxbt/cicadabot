@@ -404,7 +404,29 @@ export class CicadaBot {
         'USDT': 1.0,      // USDT is always $1.00
       };
 
-      // Get GALA price from GALA/USDC pool
+      // Optional GALA override via env for backfill/recalc scenarios
+      const overrideGala = parseFloat(process.env.GALA_PRICE_OVERRIDE_USD as any);
+      if (!isNaN(overrideGala) && overrideGala > 0) {
+        prices['GALA'] = overrideGala;
+        this.logger.debug(`GALA price (override): $${overrideGala}`);
+      }
+
+      // Try CoinGecko first for GALA (more stable reference) if no override present
+      try {
+        const cgResp = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=gala&vs_currencies=usd', { timeout: 4000 } as any);
+        if (cgResp.ok) {
+          const cgJson: any = await cgResp.json();
+          const galaUsd = cgJson?.gala?.usd;
+          if (typeof galaUsd === 'number' && galaUsd > 0) {
+            prices['GALA'] = prices['GALA'] ?? galaUsd;
+            this.logger.debug(`GALA price (CoinGecko): $${galaUsd}`);
+          }
+        }
+      } catch (e) {
+        // ignore and fall back to pool quote below
+      }
+
+      // If CoinGecko didn't set it, get GALA price from GALA/USDC pool
       try {
         const galaUsdcQuote = await this.gswap.quoting.quoteExactInput(
           COMMON_TOKENS.GALA,
@@ -414,11 +436,11 @@ export class CicadaBot {
         );
         // The quote gives us USDC amount for 1 GALA, which is the GALA price in USD
         const galaPrice = parseFloat(galaUsdcQuote.outTokenAmount.toString());
-        prices['GALA'] = galaPrice;
+        prices['GALA'] = prices['GALA'] ?? galaPrice;
         this.logger.debug(`GALA price calculated: $${galaPrice}`);
       } catch (error) {
         this.logger.debug('Failed to get GALA price, using fallback', error);
-        prices['GALA'] = 0.0063; // Updated fallback price based on current market
+        prices['GALA'] = prices['GALA'] ?? 0.0063; // Fallback price if neither source worked
       }
 
       // Get ETH price from ETH/USDC pool (if available)
@@ -943,6 +965,47 @@ export class CicadaBot {
   }
 
   /**
+   * Recalculate PnL for all swap transactions in history
+   */
+  public async recalculateAllTransactions(): Promise<number> {
+    let updated = 0;
+    for (const tx of this.transactionHistory) {
+      if (tx.type !== 'swap') continue;
+      const tokenInKey = Object.values(COMMON_TOKENS).find(k => getTokenSymbol(k) === tx.tokenIn) || tx.tokenIn;
+      const tokenOutKey = Object.values(COMMON_TOKENS).find(k => getTokenSymbol(k) === tx.tokenOut) || tx.tokenOut;
+      const pnl = await this.calculateSwapPnL(tx.amountIn, tx.amountOut, tokenInKey, tokenOutKey);
+      tx.pnl = pnl.absolute;
+      tx.pnlPercentage = pnl.percentage;
+      updated++;
+    }
+    if (updated > 0) this.saveTransactionHistory();
+    this.logger.info('Recalculated PnL for transactions', { updated });
+    return updated;
+  }
+
+  /**
+   * Recalculate PnL for swap transactions in the last N hours
+   */
+  public async recalculateTransactionsSince(hours: number): Promise<number> {
+    const cutoff = Date.now() - Math.max(0, hours) * 60 * 60 * 1000;
+    let updated = 0;
+    for (const tx of this.transactionHistory) {
+      if (tx.type !== 'swap') continue;
+      const ts = Date.parse(tx.timestamp);
+      if (isNaN(ts) || ts < cutoff) continue;
+      const tokenInKey = Object.values(COMMON_TOKENS).find(k => getTokenSymbol(k) === tx.tokenIn) || tx.tokenIn;
+      const tokenOutKey = Object.values(COMMON_TOKENS).find(k => getTokenSymbol(k) === tx.tokenOut) || tx.tokenOut;
+      const pnl = await this.calculateSwapPnL(tx.amountIn, tx.amountOut, tokenInKey, tokenOutKey);
+      tx.pnl = pnl.absolute;
+      tx.pnlPercentage = pnl.percentage;
+      updated++;
+    }
+    if (updated > 0) this.saveTransactionHistory();
+    this.logger.info('Recalculated PnL for recent transactions', { hours, updated });
+    return updated;
+  }
+
+  /**
    * Calculate Profit or Loss for a swap transaction
    * This uses real-time prices from pools and includes gas fees
    */
@@ -956,12 +1019,22 @@ export class CicadaBot {
         return { absolute: '0', percentage: '0' };
       }
       
-      // Try to value both legs directly in USDC using quotes for the exact amounts.
-      // This is more reliable than per-token price snapshots and prevents sign mistakes.
+      // Prefer valuing both legs using USD token prices first (CoinGecko-backed for GALA).
+      // If any price is unavailable, we fall back to pool quotes for the exact amounts.
       let inputUSD: BigNumber | null = null;
       let outputUSD: BigNumber | null = null;
 
-      try {
+      const snapshotPrices = await this.getTokenPrices();
+      const inPrice = snapshotPrices[tokenInSymbol];
+      const outPrice = snapshotPrices[tokenOutSymbol];
+      if (typeof inPrice === 'number' && inPrice > 0) {
+        inputUSD = new BigNumber(amountIn).multipliedBy(inPrice);
+      }
+      if (typeof outPrice === 'number' && outPrice > 0) {
+        outputUSD = new BigNumber(amountOut).multipliedBy(outPrice);
+      }
+
+      if (inputUSD === null) try {
         if (tokenInSymbol === 'USDC') {
           inputUSD = new BigNumber(amountIn);
         } else {
@@ -985,7 +1058,7 @@ export class CicadaBot {
         inputUSD = null;
       }
 
-      try {
+      if (outputUSD === null) try {
         if (tokenOutSymbol === 'USDC') {
           outputUSD = new BigNumber(amountOut);
         } else {
@@ -1011,7 +1084,7 @@ export class CicadaBot {
 
       // If direct valuation failed for either side, fall back to snapshot prices
       if (inputUSD === null || outputUSD === null) {
-        const tokenPrices = await this.getTokenPrices();
+        const tokenPrices = snapshotPrices;
         const inputPrice = tokenPrices[tokenInSymbol] || 0;
         const outputPrice = tokenPrices[tokenOutSymbol] || 0;
 

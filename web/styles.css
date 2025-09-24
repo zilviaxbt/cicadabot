@@ -180,7 +180,10 @@ body::before {
 .prime-panel,
 .arbitrage-panel,
 .token-swap-panel,
-.token-swap-panel-2 {
+.token-swap-panel-2,
+.token-swap-panel-3,
+.token-swap-panel-4,
+.token-swap-panel-5 {
     background: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(20px);
     border-radius: 12px;
@@ -198,7 +201,10 @@ body::before {
 .prime-panel:hover,
 .arbitrage-panel:hover,
 .token-swap-panel:hover,
-.token-swap-panel-2:hover {
+.token-swap-panel-2:hover,
+.token-swap-panel-3:hover,
+.token-swap-panel-4:hover,
+.token-swap-panel-5:hover {
     border-color: rgba(120, 119, 198, 0.3);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }

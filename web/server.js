@@ -1074,6 +1074,39 @@ class WebServer {
             }
         });
 
+        // Recalculate PnL for all transactions
+        this.app.post('/api/transactions/recalculate-all', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ success: false, error: 'Bot not initialized' });
+                }
+                const updated = await this.bot.recalculateAllTransactions();
+                res.json({ success: true, updated });
+            } catch (error) {
+                Logger.error('Recalculate all transactions API error', error);
+                res.status(500).json({ success: false, error: 'Failed to recalculate transactions' });
+            }
+        });
+
+        // Recalculate PnL for transactions within the last N hours
+        this.app.post('/api/transactions/recalculate-since', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ success: false, error: 'Bot not initialized' });
+                }
+                const hoursParam = (req.query.hours || req.body?.hours || 10);
+                const hours = parseFloat(hoursParam);
+                if (isNaN(hours) || hours < 0) {
+                    return res.status(400).json({ success: false, error: 'Invalid hours parameter' });
+                }
+                const updated = await this.bot.recalculateTransactionsSince(hours);
+                res.json({ success: true, updated, hours });
+            } catch (error) {
+                Logger.error('Recalculate recent transactions API error', error);
+                res.status(500).json({ success: false, error: 'Failed to recalculate recent transactions' });
+            }
+        });
+
         // Serve the main HTML file for all other routes (SPA routing)
         this.app.get('*', (req, res) => {
             res.sendFile(path.join(__dirname, 'index.html'));
