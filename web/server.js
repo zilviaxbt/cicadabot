@@ -728,6 +728,255 @@ class WebServer {
             }
         });
 
+        // Pool Shark 3 Endpoints
+        this.app.post('/api/token-swap-3/start', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const { config } = req.body;
+                Logger.info('Starting Pool Shark 3 via API', config);
+
+                await this.bot.startArbitrageStrategy('token-swap-3', config);
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 3 started successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 3 start API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to start Pool Shark 3' 
+                });
+            }
+        });
+
+        this.app.post('/api/token-swap-3/stop', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                Logger.info('Stopping Pool Shark 3 via API');
+                await this.bot.stopArbitrageStrategy('token-swap-3');
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 3 stopped successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 3 stop API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to stop Pool Shark 3' 
+                });
+            }
+        });
+
+        this.app.get('/api/token-swap-3/status', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const tokenSwap3Strategy = this.bot.getStrategy('token-swap-3');
+                const isTokenSwap3Running = tokenSwap3Strategy !== null && tokenSwap3Strategy.isRunning;
+                
+                res.json({
+                    success: true,
+                    isRunning: isTokenSwap3Running,
+                    strategy: isTokenSwap3Running ? 'TokenSwap3Strategy' : null,
+                    resultsCount: isTokenSwap3Running ? this.bot.getArbitrageResults().filter(r => r.type && r.type.includes('Pool Shark 3')).length : 0
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 3 status API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to get Pool Shark 3 status' 
+                });
+            }
+        });
+
+        // Pool Shark 4 Endpoints
+        this.app.post('/api/token-swap-4/start', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const { config } = req.body;
+                Logger.info('Starting Pool Shark 4 via API', config);
+
+                await this.bot.startArbitrageStrategy('token-swap-4', config);
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 4 started successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 4 start API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to start Pool Shark 4' 
+                });
+            }
+        });
+
+        this.app.post('/api/token-swap-4/stop', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                Logger.info('Stopping Pool Shark 4 via API');
+                await this.bot.stopArbitrageStrategy('token-swap-4');
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 4 stopped successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 4 stop API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to stop Pool Shark 4' 
+                });
+            }
+        });
+
+        this.app.get('/api/token-swap-4/status', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const tokenSwap4Strategy = this.bot.getStrategy('token-swap-4');
+                const isTokenSwap4Running = tokenSwap4Strategy !== null && tokenSwap4Strategy.isRunning;
+                
+                res.json({
+                    success: true,
+                    isRunning: isTokenSwap4Running,
+                    strategy: isTokenSwap4Running ? 'TokenSwap4Strategy' : null,
+                    resultsCount: isTokenSwap4Running ? this.bot.getArbitrageResults().filter(r => r.type && r.type.includes('Pool Shark 4')).length : 0
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 4 status API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to get Pool Shark 4 status' 
+                });
+            }
+        });
+
+        // Pool Shark 5 Endpoints
+        this.app.post('/api/token-swap-5/start', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const { config } = req.body;
+                Logger.info('Starting Pool Shark 5 via API', config);
+
+                await this.bot.startArbitrageStrategy('token-swap-5', config);
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 5 started successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 5 start API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to start Pool Shark 5' 
+                });
+            }
+        });
+
+        this.app.post('/api/token-swap-5/stop', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                Logger.info('Stopping Pool Shark 5 via API');
+                await this.bot.stopArbitrageStrategy('token-swap-5');
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 5 stopped successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 5 stop API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to stop Pool Shark 5' 
+                });
+            }
+        });
+
+        this.app.get('/api/token-swap-5/status', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const tokenSwap5Strategy = this.bot.getStrategy('token-swap-5');
+                const isTokenSwap5Running = tokenSwap5Strategy !== null && tokenSwap5Strategy.isRunning;
+                
+                res.json({
+                    success: true,
+                    isRunning: isTokenSwap5Running,
+                    strategy: isTokenSwap5Running ? 'TokenSwap5Strategy' : null,
+                    resultsCount: isTokenSwap5Running ? this.bot.getArbitrageResults().filter(r => r.type && r.type.includes('Pool Shark 5')).length : 0
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 5 status API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to get Pool Shark 5 status' 
+                });
+            }
+        });
+
         // Get available tokens endpoint
         this.app.get('/api/tokens', (req, res) => {
             res.json({
@@ -800,6 +1049,28 @@ class WebServer {
                     success: false, 
                     error: 'Failed to get transaction' 
                 });
+            }
+        });
+
+        // Recalculate PnL for a transaction (or latest if none provided)
+        this.app.post('/api/transactions/recalculate', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const { id } = req.body || {};
+                const updated = await this.bot.recalculateTransaction(id);
+                if (!updated) {
+                    return res.status(404).json({ success: false, error: 'Transaction not found' });
+                }
+                res.json({ success: true, transaction: updated });
+            } catch (error) {
+                Logger.error('Recalculate transaction API error', error);
+                res.status(500).json({ success: false, error: 'Failed to recalculate transaction' });
             }
         });
 

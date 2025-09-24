@@ -37,6 +37,204 @@
             </div>
         </header>
 
+        <!-- Leaderboard Panel -->
+        <section class="leaderboard-panel collapsible-panel">
+            <div class="panel-header collapsible-header">
+                <h2><i class="fas fa-medal"></i> Leaderboard</h2>
+                <button class="collapse-toggle" onclick="toggleCollapsible('leaderboard')">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+            </div>
+            <div id="leaderboardContent" class="collapsible-content collapsed">
+                <div class="leaderboard-content">
+                    <div class="leaderboard-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Traders</span>
+                            <span class="stat-value" id="totalTraders">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Volume</span>
+                            <span class="stat-value" id="totalVolume">$0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Top Performer</span>
+                            <span class="stat-value" id="topPerformer">-</span>
+                        </div>
+                    </div>
+                    <div class="leaderboard-list">
+                        <div class="leaderboard-header">
+                            <span class="rank-header">Rank</span>
+                            <span class="trader-header">Trader</span>
+                            <span class="volume-header">Volume</span>
+                            <span class="profit-header">Profit</span>
+                            <span class="winrate-header">Win Rate</span>
+                        </div>
+                        <div id="leaderboardEntries" class="leaderboard-entries">
+                            <div class="no-data">No trading data available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Trophy Room Panel -->
+        <section class="trophy-room-panel collapsible-panel">
+            <div class="panel-header collapsible-header">
+                <h2><i class="fas fa-trophy"></i> Trophy Room</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="refreshTrophyRoom" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.9rem;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="collapse-toggle" onclick="toggleCollapsible('trophyRoom')">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="trophyRoomContent" class="collapsible-content collapsed">
+                <div class="trophy-room-content">
+                    <div class="trophy-stats">
+                        <div class="trophy-stat-item">
+                            <span class="trophy-stat-label">High Performers</span>
+                            <span class="trophy-stat-value" id="highPerformersCount">0</span>
+                        </div>
+                        <div class="trophy-stat-item">
+                            <span class="trophy-stat-label">Best PnL %</span>
+                            <span class="trophy-stat-value" id="bestPnlPercentage">0%</span>
+                        </div>
+                        <div class="trophy-stat-item">
+                            <span class="trophy-stat-label">Best PnL $</span>
+                            <span class="trophy-stat-value" id="bestPnlDollar">$0</span>
+                        </div>
+                        <div class="trophy-stat-item">
+                            <span class="trophy-stat-label">Total PnL</span>
+                            <span class="trophy-stat-value" id="totalTrophyProfit">$0</span>
+                        </div>
+                    </div>
+                    
+                    <!-- PnL Percentage Rankings -->
+                    <div class="trophy-section">
+                        <div class="trophy-section-header">
+                            <h3><i class="fas fa-percentage"></i> Top PnL % Performers</h3>
+                        </div>
+                        <div class="trophy-list">
+                            <div class="trophy-list-header">
+                                <span class="trophy-rank-header">🏆</span>
+                                <span class="trophy-pair-header">Trade Pair</span>
+                                <span class="trophy-hash-header">Hash</span>
+                                <span class="trophy-cost-header">Cost</span>
+                                <span class="trophy-pnl-header">PnL %</span>
+                                <span class="trophy-profit-header">PnL $</span>
+                                <span class="trophy-time-header">Time</span>
+                            </div>
+                            <div id="trophyEntriesPercentage" class="trophy-entries">
+                                <div class="no-trophies">No high-performing trades yet</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PnL Dollar Rankings -->
+                    <div class="trophy-section">
+                        <div class="trophy-section-header">
+                            <h3><i class="fas fa-dollar-sign"></i> Top PnL $ Performers</h3>
+                        </div>
+                        <div class="trophy-list">
+                            <div class="trophy-list-header">
+                                <span class="trophy-rank-header">🏆</span>
+                                <span class="trophy-pair-header">Trade Pair</span>
+                                <span class="trophy-hash-header">Hash</span>
+                                <span class="trophy-cost-header">Cost</span>
+                                <span class="trophy-pnl-header">PnL %</span>
+                                <span class="trophy-profit-header">PnL $</span>
+                                <span class="trophy-time-header">Time</span>
+                            </div>
+                            <div id="trophyEntriesDollar" class="trophy-entries">
+                                <div class="no-trophies">No high-performing trades yet</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Graveyard Panel -->
+        <section class="graveyard-panel collapsible-panel">
+            <div class="panel-header collapsible-header">
+                <h2><i class="fas fa-skull-crossbones"></i> The Graveyard</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button id="refreshGraveyard" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.9rem;">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                    <button class="collapse-toggle" onclick="toggleCollapsible('graveyard')">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="graveyardContent" class="collapsible-content collapsed">
+                <div class="graveyard-content">
+                    <div class="graveyard-stats">
+                        <div class="graveyard-stat-item">
+                            <span class="graveyard-stat-label">Worst Performers</span>
+                            <span class="graveyard-stat-value" id="worstPerformersCount">0</span>
+                        </div>
+                        <div class="graveyard-stat-item">
+                            <span class="graveyard-stat-label">Worst PnL %</span>
+                            <span class="graveyard-stat-value" id="worstPnlPercentage">0%</span>
+                        </div>
+                        <div class="graveyard-stat-item">
+                            <span class="graveyard-stat-label">Worst PnL $</span>
+                            <span class="graveyard-stat-value" id="worstPnlDollar">$0.00</span>
+                        </div>
+                        <div class="graveyard-stat-item">
+                            <span class="graveyard-stat-label">Total Loss</span>
+                            <span class="graveyard-stat-value" id="totalLoss">$0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="graveyard-sections">
+                        <div class="graveyard-section">
+                            <div class="graveyard-section-header">
+                                <h3><i class="fas fa-chart-line-down"></i> Worst PnL %</h3>
+                            </div>
+                            <div class="graveyard-list">
+                                <div class="graveyard-list-header">
+                                    <span class="graveyard-rank-header">💀</span>
+                                    <span class="graveyard-pair-header">Trade Pair</span>
+                                    <span class="graveyard-hash-header">Hash</span>
+                                    <span class="graveyard-cost-header">Cost</span>
+                                    <span class="graveyard-pnl-header">PnL %</span>
+                                    <span class="graveyard-profit-header">PnL $</span>
+                                    <span class="graveyard-time-header">Time</span>
+                                </div>
+                                <div id="graveyardEntriesPercentage" class="graveyard-entries">
+                                    <div class="no-graveyard">No losses to bury yet</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="graveyard-section">
+                            <div class="graveyard-section-header">
+                                <h3><i class="fas fa-dollar-sign"></i> Worst PnL $</h3>
+                            </div>
+                            <div class="graveyard-list">
+                                <div class="graveyard-list-header">
+                                    <span class="graveyard-rank-header">💀</span>
+                                    <span class="graveyard-pair-header">Trade Pair</span>
+                                    <span class="graveyard-hash-header">Hash</span>
+                                    <span class="graveyard-cost-header">Cost</span>
+                                    <span class="graveyard-pnl-header">PnL %</span>
+                                    <span class="graveyard-profit-header">PnL $</span>
+                                    <span class="graveyard-time-header">Time</span>
+                                </div>
+                                <div id="graveyardEntriesDollar" class="graveyard-entries">
+                                    <div class="no-graveyard">No losses to bury yet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Main Content -->
         <main class="main-content">
             <!-- Left Column -->
@@ -619,6 +817,297 @@
                     <div class="token-swap-results-section">
                         <h4><i class="fas fa-chart-bar"></i> Recent Results</h4>
                         <div id="swap3Results" class="results-container">
+                            <div class="no-results">No results yet</div>
+                        </div>
+                    </div>
+                </div>
+                </section>
+
+                <!-- Pool Shark 3 Panel -->
+                <section class="token-swap-panel-3 collapsible-panel collapsed">
+                <div class="panel-header collapsible-header" onclick="togglePanel('token-swap-panel-3')">
+                    <h3><i class="fas fa-fish"></i> Pool Shark 3</h3>
+                    <div class="header-controls">
+                        <button id="showTokenSwap3Info" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">
+                            <i class="fas fa-info-circle"></i> Info
+                        </button>
+                        <div class="strategy-status">
+                            <span id="swap4Status" class="status-indicator">
+                                <span class="status-dot offline"></span>
+                                <span>Stopped</span>
+                            </span>
+                        </div>
+                        <button class="collapse-toggle">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="token-swap-content collapsible-content collapsed">
+                    <!-- Pool Shark 3 Configuration -->
+                    <div class="token-swap-config-section">
+                        <h4><i class="fas fa-cog"></i> Configuration</h4>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="swap4TokenIn">From Token</label>
+                                <select id="swap4TokenIn" class="config-select">
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap4TokenOut">To Token</label>
+                                <select id="swap4TokenOut" class="config-select">
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap4Amount">Amount</label>
+                                <input type="number" id="swap4Amount" placeholder="0.0" step="0.000001" min="0" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap4Slippage">Slippage Tolerance (%)</label>
+                                <input type="number" id="swap4Slippage" value="1.0" step="0.1" min="0.1" max="50" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap4FeeTier">Fee Tier</label>
+                                <select id="swap4FeeTier" class="config-select">
+                                    <option value="500">0.05% (Low)</option>
+                                    <option value="3000">0.30% (Medium)</option>
+                                    <option value="10000">1.00% (High)</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap4Interval">Auto Swap Interval (seconds)</label>
+                                <input type="number" id="swap4Interval" value="45" step="1" min="5" max="300" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Range: 5-300 seconds (5 seconds to 5 minutes)</small>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap4MinAmountOut">Min Amount Out Threshold</label>
+                                <input type="number" id="swap4MinAmountOut" value="200" step="0.1" min="0" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Only execute swap if amountOut ≥ this value</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 3 Controls -->
+                    <div class="token-swap-controls-section">
+                        <h4><i class="fas fa-play-circle"></i> Controls</h4>
+                        <div class="control-buttons">
+                            <button id="startSwap4StrategyBtn" class="btn btn-success">
+                                <i class="fas fa-play"></i> Start Pool Shark 3
+                            </button>
+                            <button id="stopSwap4StrategyBtn" class="btn btn-danger" disabled>
+                                <i class="fas fa-stop"></i> Stop Pool Shark 3
+                            </button>
+                            <button id="refreshSwap4StatusBtn" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 3 Results -->
+                    <div class="token-swap-results-section">
+                        <h4><i class="fas fa-chart-bar"></i> Recent Results</h4>
+                        <div id="swap4Results" class="results-container">
+                            <div class="no-results">No results yet</div>
+                        </div>
+                    </div>
+                </div>
+                </section>
+
+                <!-- Pool Shark 4 Panel -->
+                <section class="token-swap-panel-4 collapsible-panel collapsed">
+                <div class="panel-header collapsible-header" onclick="togglePanel('token-swap-panel-4')">
+                    <h3><i class="fas fa-fish"></i> Pool Shark 4</h3>
+                    <div class="header-controls">
+                        <button id="showTokenSwap4Info" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">
+                            <i class="fas fa-info-circle"></i> Info
+                        </button>
+                        <div class="strategy-status">
+                            <span id="swap5Status" class="status-indicator">
+                                <span class="status-dot offline"></span>
+                                <span>Stopped</span>
+                            </span>
+                        </div>
+                        <button class="collapse-toggle">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="token-swap-content collapsible-content collapsed">
+                    <!-- Pool Shark 4 Configuration -->
+                    <div class="token-swap-config-section">
+                        <h4><i class="fas fa-cog"></i> Configuration</h4>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="swap5TokenIn">From Token</label>
+                                <select id="swap5TokenIn" class="config-select">
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap5TokenOut">To Token</label>
+                                <select id="swap5TokenOut" class="config-select">
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap5Amount">Amount</label>
+                                <input type="number" id="swap5Amount" placeholder="0.0" step="0.000001" min="0" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap5Slippage">Slippage Tolerance (%)</label>
+                                <input type="number" id="swap5Slippage" value="1.0" step="0.1" min="0.1" max="50" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap5FeeTier">Fee Tier</label>
+                                <select id="swap5FeeTier" class="config-select">
+                                    <option value="500">0.05% (Low)</option>
+                                    <option value="3000">0.30% (Medium)</option>
+                                    <option value="10000">1.00% (High)</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap5Interval">Auto Swap Interval (seconds)</label>
+                                <input type="number" id="swap5Interval" value="60" step="1" min="5" max="300" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Range: 5-300 seconds (5 seconds to 5 minutes)</small>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap5MinAmountOut">Min Amount Out Threshold</label>
+                                <input type="number" id="swap5MinAmountOut" value="500" step="0.1" min="0" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Only execute swap if amountOut ≥ this value</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 4 Controls -->
+                    <div class="token-swap-controls-section">
+                        <h4><i class="fas fa-play-circle"></i> Controls</h4>
+                        <div class="control-buttons">
+                            <button id="startSwap5StrategyBtn" class="btn btn-success">
+                                <i class="fas fa-play"></i> Start Pool Shark 4
+                            </button>
+                            <button id="stopSwap5StrategyBtn" class="btn btn-danger" disabled>
+                                <i class="fas fa-stop"></i> Stop Pool Shark 4
+                            </button>
+                            <button id="refreshSwap5StatusBtn" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 4 Results -->
+                    <div class="token-swap-results-section">
+                        <h4><i class="fas fa-chart-bar"></i> Recent Results</h4>
+                        <div id="swap5Results" class="results-container">
+                            <div class="no-results">No results yet</div>
+                        </div>
+                    </div>
+                </div>
+                </section>
+
+                <!-- Pool Shark 5 Panel -->
+                <section class="token-swap-panel-5 collapsible-panel collapsed">
+                <div class="panel-header collapsible-header" onclick="togglePanel('token-swap-panel-5')">
+                    <h3><i class="fas fa-fish"></i> Pool Shark 5</h3>
+                    <div class="header-controls">
+                        <button id="showTokenSwap5Info" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">
+                            <i class="fas fa-info-circle"></i> Info
+                        </button>
+                        <div class="strategy-status">
+                            <span id="swap6Status" class="status-indicator">
+                                <span class="status-dot offline"></span>
+                                <span>Stopped</span>
+                            </span>
+                        </div>
+                        <button class="collapse-toggle">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="token-swap-content collapsible-content collapsed">
+                    <!-- Pool Shark 5 Configuration -->
+                    <div class="token-swap-config-section">
+                        <h4><i class="fas fa-cog"></i> Configuration</h4>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="swap6TokenIn">From Token</label>
+                                <select id="swap6TokenIn" class="config-select">
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap6TokenOut">To Token</label>
+                                <select id="swap6TokenOut" class="config-select">
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap6Amount">Amount</label>
+                                <input type="number" id="swap6Amount" placeholder="0.0" step="0.000001" min="0" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap6Slippage">Slippage Tolerance (%)</label>
+                                <input type="number" id="swap6Slippage" value="1.0" step="0.1" min="0.1" max="50" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap6FeeTier">Fee Tier</label>
+                                <select id="swap6FeeTier" class="config-select">
+                                    <option value="500">0.05% (Low)</option>
+                                    <option value="3000">0.30% (Medium)</option>
+                                    <option value="10000">1.00% (High)</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap6Interval">Auto Swap Interval (seconds)</label>
+                                <input type="number" id="swap6Interval" value="90" step="1" min="5" max="300" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Range: 5-300 seconds (5 seconds to 5 minutes)</small>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap6MinAmountOut">Min Amount Out Threshold</label>
+                                <input type="number" id="swap6MinAmountOut" value="0.05" step="0.001" min="0" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Only execute swap if amountOut ≥ this value</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 5 Controls -->
+                    <div class="token-swap-controls-section">
+                        <h4><i class="fas fa-play-circle"></i> Controls</h4>
+                        <div class="control-buttons">
+                            <button id="startSwap6StrategyBtn" class="btn btn-success">
+                                <i class="fas fa-play"></i> Start Pool Shark 5
+                            </button>
+                            <button id="stopSwap6StrategyBtn" class="btn btn-danger" disabled>
+                                <i class="fas fa-stop"></i> Stop Pool Shark 5
+                            </button>
+                            <button id="refreshSwap6StatusBtn" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 5 Results -->
+                    <div class="token-swap-results-section">
+                        <h4><i class="fas fa-chart-bar"></i> Recent Results</h4>
+                        <div id="swap6Results" class="results-container">
                             <div class="no-results">No results yet</div>
                         </div>
                     </div>

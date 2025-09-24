@@ -648,8 +648,11 @@ input[type="number"]:focus {
     font-weight: 600;
 }
 
-.transaction-pnl .pnl-value {
+.transaction-pnl .pnl-value.profit-positive {
     color: #00ff88;
+}
+.transaction-pnl .pnl-value.profit-negative {
+    color: #ff4757;
 }
 
 .transaction-pnl-percentage .pnl-value.profit-positive {
@@ -1726,4 +1729,1002 @@ input[type="number"]:focus {
     .config-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Leaderboard Panel Styles */
+.leaderboard-panel {
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transition: all 0.3s ease;
+}
+
+.leaderboard-panel:hover {
+    border-color: rgba(120, 119, 198, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.leaderboard-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.leaderboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-item {
+    background: rgba(120, 119, 198, 0.1);
+    border: 1px solid rgba(120, 119, 198, 0.2);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    background: rgba(120, 119, 198, 0.15);
+    border-color: rgba(120, 119, 198, 0.3);
+    transform: translateY(-2px);
+}
+
+.stat-label {
+    display: block;
+    color: #b0b0b0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    display: block;
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(120, 119, 198, 0.3);
+}
+
+.leaderboard-list {
+    background: rgba(15, 15, 15, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.leaderboard-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px 120px 100px;
+    gap: 16px;
+    padding: 16px 20px;
+    background: rgba(120, 119, 198, 0.1);
+    border-bottom: 1px solid rgba(120, 119, 198, 0.2);
+    font-weight: 600;
+    color: #7877c6;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.leaderboard-entries {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.leaderboard-entry {
+    display: grid;
+    grid-template-columns: 60px 1fr 120px 120px 100px;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.3s ease;
+    align-items: center;
+}
+
+.leaderboard-entry:hover {
+    background: rgba(120, 119, 198, 0.05);
+}
+
+.leaderboard-entry:last-child {
+    border-bottom: none;
+}
+
+.leaderboard-entry.rank-1 {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border-left: 4px solid #ffd700;
+}
+
+.leaderboard-entry.rank-2 {
+    background: linear-gradient(135deg, rgba(192, 192, 192, 0.1), rgba(192, 192, 192, 0.05));
+    border-left: 4px solid #c0c0c0;
+}
+
+.leaderboard-entry.rank-3 {
+    background: linear-gradient(135deg, rgba(205, 127, 50, 0.1), rgba(205, 127, 50, 0.05));
+    border-left: 4px solid #cd7f32;
+}
+
+.rank {
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-align: center;
+    color: #7877c6;
+}
+
+.rank.rank-1 {
+    color: #ffd700;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+.rank.rank-2 {
+    color: #c0c0c0;
+    text-shadow: 0 0 8px rgba(192, 192, 192, 0.5);
+}
+
+.rank.rank-3 {
+    color: #cd7f32;
+    text-shadow: 0 0 8px rgba(205, 127, 50, 0.5);
+}
+
+.trader-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.trader-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7877c6, #5a5a9a);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(120, 119, 198, 0.3);
+}
+
+.trader-name {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.trader-address {
+    font-size: 0.8rem;
+    color: #b0b0b0;
+    font-family: monospace;
+    margin-top: 2px;
+}
+
+.volume {
+    font-weight: 600;
+    color: #00ff88;
+    text-align: right;
+}
+
+.profit {
+    font-weight: 600;
+    text-align: right;
+}
+
+.profit.positive {
+    color: #00ff88;
+}
+
+.profit.negative {
+    color: #ff4757;
+}
+
+.winrate {
+    font-weight: 600;
+    color: #7877c6;
+    text-align: right;
+}
+
+.no-data {
+    text-align: center;
+    color: #7877c6;
+    font-style: italic;
+    padding: 40px 20px;
+    font-size: 1.1rem;
+}
+
+/* Responsive adjustments for leaderboard */
+@media (max-width: 768px) {
+    .leaderboard-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .leaderboard-header,
+    .leaderboard-entry {
+        grid-template-columns: 50px 1fr 100px 100px 80px;
+        gap: 8px;
+        padding: 12px 16px;
+    }
+    
+    .trader-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .trader-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+    }
+    
+    .trader-name {
+        font-size: 0.9rem;
+    }
+    
+    .trader-address {
+        font-size: 0.7rem;
+    }
+    
+    .volume,
+    .profit,
+    .winrate {
+        font-size: 0.9rem;
+    }
+}
+
+/* Trophy Room Panel Styles */
+.trophy-room-panel {
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.trophy-room-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
+    animation: trophyGlow 3s ease-in-out infinite;
+}
+
+@keyframes trophyGlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.trophy-room-panel:hover {
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 12px 40px rgba(255, 215, 0, 0.1);
+}
+
+.trophy-room-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.trophy-section {
+    background: rgba(15, 15, 15, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.trophy-section-header {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    padding: 16px 20px;
+}
+
+.trophy-section-header h3 {
+    color: #ffd700;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trophy-section-header h3 i {
+    color: #ffd700;
+    filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.3));
+}
+
+.trophy-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.trophy-stat-item {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.trophy-stat-item::before {
+    content: '🏆';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+.trophy-stat-item:hover {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.08));
+    border-color: rgba(255, 215, 0, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.trophy-stat-label {
+    display: block;
+    color: #ffd700;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.trophy-stat-value {
+    display: block;
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.trophy-list {
+    background: rgba(15, 15, 15, 0.8);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.trophy-list-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 140px 100px 100px 120px 100px;
+    gap: 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    font-weight: 600;
+    color: #ffd700;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.trophy-entries {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.trophy-entry {
+    display: grid;
+    grid-template-columns: 60px 1fr 140px 100px 100px 120px 100px;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+    transition: all 0.3s ease;
+    align-items: center;
+    position: relative;
+}
+
+.trophy-entry:hover {
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.trophy-entry:last-child {
+    border-bottom: none;
+}
+
+.trophy-entry::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #ffd700, #ffed4e);
+    opacity: 0.8;
+}
+
+.trophy-rank {
+    font-size: 1.5rem;
+    text-align: center;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
+}
+
+.trophy-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.trophy-pair-main {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.trophy-pair-details {
+    font-size: 0.8rem;
+    color: #b0b0b0;
+    font-family: monospace;
+}
+
+.trophy-pnl {
+    font-weight: 700;
+    text-align: center;
+    font-size: 1.1rem;
+    text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+.trophy-pnl.positive {
+    color: #00ff88;
+}
+
+.trophy-pnl.negative {
+    color: #ff4757;
+}
+
+.trophy-profit {
+    font-weight: 600;
+    text-align: right;
+    color: #00ff88;
+}
+
+.trophy-time {
+    font-size: 0.9rem;
+    color: #7877c6;
+    text-align: right;
+}
+
+.trophy-hash {
+    font-size: 0.8rem;
+    color: #7877c6;
+    font-family: monospace;
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+.trophy-hash a {
+    color: #7877c6;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.trophy-hash a:hover {
+    color: #00ff88;
+    text-decoration: underline;
+}
+
+.trophy-cost {
+    font-size: 0.8rem;
+    color: #7877c6;
+    font-family: monospace;
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+.no-trophies {
+    text-align: center;
+    color: #ffd700;
+    font-style: italic;
+    padding: 40px 20px;
+    font-size: 1.1rem;
+    background: rgba(255, 215, 0, 0.05);
+    border: 2px dashed rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.no-trophies::before {
+    content: '🏆';
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+/* Trophy entry special effects */
+.trophy-entry.exceptional {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border-left: 4px solid #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.trophy-entry.exceptional::before {
+    background: linear-gradient(180deg, #ffd700, #ffed4e, #ffd700);
+    animation: trophyShine 2s ease-in-out infinite;
+}
+
+@keyframes trophyShine {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+/* Responsive adjustments for trophy room */
+@media (max-width: 768px) {
+    .trophy-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .trophy-list-header,
+    .trophy-entry {
+        grid-template-columns: 50px 1fr 100px 80px 80px 100px 80px;
+        gap: 8px;
+        padding: 12px 16px;
+    }
+    
+    .trophy-pair {
+        gap: 2px;
+    }
+    
+    .trophy-pair-main {
+        font-size: 0.9rem;
+    }
+    
+    .trophy-pair-details {
+        font-size: 0.7rem;
+    }
+    
+    .trophy-pnl {
+        font-size: 1rem;
+    }
+    
+    .trophy-profit,
+    .trophy-time {
+        font-size: 0.8rem;
+    }
+    
+    .trophy-rank {
+        font-size: 1.2rem;
+    }
+}
+
+/* The Graveyard Panel Styles */
+.graveyard-panel {
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 71, 87, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.graveyard-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #ff4757, #ff6b7a, #ff4757);
+    animation: graveyardGlow 3s ease-in-out infinite;
+}
+
+@keyframes graveyardGlow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+}
+
+.graveyard-panel:hover {
+    border-color: rgba(255, 71, 87, 0.4);
+    box-shadow: 0 12px 40px rgba(255, 71, 87, 0.1);
+}
+
+.graveyard-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.graveyard-section {
+    background: rgba(15, 15, 15, 0.6);
+    border: 1px solid rgba(255, 71, 87, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.graveyard-section-header {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(255, 71, 87, 0.05));
+    border-bottom: 1px solid rgba(255, 71, 87, 0.2);
+    padding: 16px 20px;
+}
+
+.graveyard-section-header h3 {
+    color: #ff4757;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.graveyard-section-header h3 i {
+    color: #ff4757;
+    filter: drop-shadow(0 0 6px rgba(255, 71, 87, 0.3));
+}
+
+.graveyard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.graveyard-stat-item {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(255, 71, 87, 0.05));
+    border: 1px solid rgba(255, 71, 87, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.graveyard-stat-item::before {
+    content: '💀';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 1.2rem;
+    opacity: 0.7;
+}
+
+.graveyard-stat-item:hover {
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.15), rgba(255, 71, 87, 0.08));
+    border-color: rgba(255, 71, 87, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.2);
+}
+
+.graveyard-stat-label {
+    display: block;
+    color: #ff4757;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.graveyard-stat-value {
+    display: block;
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+.graveyard-list {
+    background: rgba(15, 15, 15, 0.8);
+    border: 1px solid rgba(255, 71, 87, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.graveyard-list-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 140px 100px 100px 120px 100px;
+    gap: 16px;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(255, 71, 87, 0.05));
+    border-bottom: 1px solid rgba(255, 71, 87, 0.2);
+    font-weight: 600;
+    color: #ff4757;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.graveyard-entries {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.graveyard-entry {
+    display: grid;
+    grid-template-columns: 60px 1fr 140px 100px 100px 120px 100px;
+    gap: 16px;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255, 71, 87, 0.1);
+    transition: all 0.3s ease;
+    align-items: center;
+    position: relative;
+}
+
+.graveyard-entry:hover {
+    background: rgba(255, 71, 87, 0.05);
+}
+
+.graveyard-entry:last-child {
+    border-bottom: none;
+}
+
+.graveyard-entry::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #ff4757, #ff6b7a);
+    opacity: 0.8;
+}
+
+.graveyard-rank {
+    font-size: 1.5rem;
+    text-align: center;
+    filter: drop-shadow(0 0 8px rgba(255, 71, 87, 0.5));
+}
+
+.graveyard-pair {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.graveyard-pair-main {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 1rem;
+}
+
+.graveyard-pair-details {
+    font-size: 0.8rem;
+    color: #b0b0b0;
+    font-family: monospace;
+}
+
+.graveyard-pnl {
+    font-weight: 700;
+    text-align: center;
+    font-size: 1.1rem;
+    text-shadow: 0 0 8px rgba(255, 71, 87, 0.5);
+    color: #ff4757;
+}
+
+.graveyard-profit {
+    font-weight: 600;
+    text-align: right;
+    color: #ff4757;
+}
+
+.graveyard-time {
+    font-size: 0.9rem;
+    color: #7877c6;
+    text-align: right;
+}
+
+.graveyard-hash {
+    font-size: 0.8rem;
+    color: #7877c6;
+    font-family: monospace;
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+.graveyard-hash a {
+    color: #7877c6;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.graveyard-hash a:hover {
+    color: #ff4757;
+    text-decoration: underline;
+}
+
+.graveyard-cost {
+    font-size: 0.8rem;
+    color: #7877c6;
+    font-family: monospace;
+    word-break: break-all;
+    line-height: 1.2;
+}
+
+.no-graveyard {
+    text-align: center;
+    color: #ff4757;
+    font-style: italic;
+    padding: 40px 20px;
+    font-size: 1.1rem;
+    background: rgba(255, 71, 87, 0.05);
+    border: 2px dashed rgba(255, 71, 87, 0.3);
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.no-graveyard::before {
+    content: '💀';
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+/* Graveyard entry special effects - Top 3 only */
+.graveyard-entry.negative {
+    /* 3rd place - subtle highlighting */
+    background: rgba(255, 71, 87, 0.05);
+    border-left: 3px solid rgba(255, 71, 87, 0.4);
+    box-shadow: 0 0 8px rgba(255, 71, 87, 0.1);
+}
+
+.graveyard-entry.severe {
+    /* 2nd place - medium highlighting */
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.08), rgba(255, 71, 87, 0.04));
+    border-left: 4px solid rgba(255, 71, 87, 0.7);
+    box-shadow: 0 0 12px rgba(255, 71, 87, 0.15);
+}
+
+.graveyard-entry.catastrophic {
+    /* 1st place - maximum highlighting */
+    background: linear-gradient(135deg, rgba(255, 71, 87, 0.12), rgba(255, 71, 87, 0.06));
+    border-left: 5px solid #ff4757;
+    box-shadow: 0 0 20px rgba(255, 71, 87, 0.2);
+}
+
+.graveyard-entry.catastrophic::before {
+    background: linear-gradient(180deg, #ff4757, #ff6b7a, #ff4757);
+    animation: graveyardShine 2s ease-in-out infinite;
+}
+
+@keyframes graveyardShine {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+/* Responsive adjustments for graveyard */
+@media (max-width: 768px) {
+    .graveyard-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .graveyard-list-header,
+    .graveyard-entry {
+        grid-template-columns: 50px 1fr 100px 80px 80px 100px 80px;
+        gap: 8px;
+        padding: 12px 16px;
+    }
+    
+    .graveyard-pair {
+        gap: 2px;
+    }
+    
+    .graveyard-pair-main {
+        font-size: 0.9rem;
+    }
+    
+    .graveyard-pair-details {
+        font-size: 0.7rem;
+    }
+    
+    .graveyard-pnl {
+        font-size: 1rem;
+    }
+    
+    .graveyard-profit,
+    .graveyard-time {
+        font-size: 0.8rem;
+    }
+    
+    .graveyard-rank {
+        font-size: 1.2rem;
+    }
+}
+
+/* Custom Scrollbar Styles */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(20, 20, 20, 0.8);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #7877c6, #5a5a9a);
+    border-radius: 6px;
+    border: 1px solid rgba(120, 119, 198, 0.3);
+    box-shadow: 0 0 8px rgba(120, 119, 198, 0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #8a89d4, #6b6baa);
+    border-color: rgba(120, 119, 198, 0.5);
+    box-shadow: 0 0 12px rgba(120, 119, 198, 0.3);
+}
+
+::-webkit-scrollbar-thumb:active {
+    background: linear-gradient(180deg, #9a99e4, #7b7bba);
+    box-shadow: 0 0 16px rgba(120, 119, 198, 0.4);
+}
+
+::-webkit-scrollbar-corner {
+    background: rgba(20, 20, 20, 0.8);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #7877c6 rgba(20, 20, 20, 0.8);
+}
+
+/* Special scrollbar styling for trophy room and leaderboard */
+.trophy-entries::-webkit-scrollbar-thumb,
+.leaderboard-entries::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #ffd700, #ffed4e);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+.trophy-entries::-webkit-scrollbar-thumb:hover,
+.leaderboard-entries::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ffed4e, #ffd700);
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+}
+
+.trophy-entries::-webkit-scrollbar-track,
+.leaderboard-entries::-webkit-scrollbar-track {
+    background: rgba(15, 15, 15, 0.8);
+    border: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+/* Lunar results scrollbar */
+.lunar-results-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #7877c6, #5a5a9a);
+    border: 1px solid rgba(120, 119, 198, 0.3);
+    box-shadow: 0 0 8px rgba(120, 119, 198, 0.2);
+}
+
+.lunar-results-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #8a89d4, #6b6baa);
+    border-color: rgba(120, 119, 198, 0.5);
+    box-shadow: 0 0 12px rgba(120, 119, 198, 0.3);
+}
+
+.lunar-results-content::-webkit-scrollbar-track {
+    background: rgba(15, 15, 15, 0.8);
+    border: 1px solid rgba(120, 119, 198, 0.1);
 }
