@@ -45,6 +45,31 @@ class GalaSwapWebInterface {
         // Refresh transaction history
         document.getElementById('refreshTransactions').addEventListener('click', () => this.loadTransactionHistory());
         
+        // Recalculate last 10 hours
+        const recalcBtn = document.getElementById('recalc10h');
+        if (recalcBtn) {
+            recalcBtn.addEventListener('click', async () => {
+                try {
+                    this.showToast('Recalculating last 10 hours...', 'info');
+                    await fetch(`${this.apiBaseUrl}/api/transactions/recalculate-since?hours=10`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({})
+                    });
+                    await this.loadTransactionHistory();
+                    // Give the UI panels a moment to refresh dependent widgets
+                    setTimeout(() => {
+                        if (window.trophyRoomManager) window.trophyRoomManager.updateTrophyRoom();
+                        if (window.graveyardManager) window.graveyardManager.updateGraveyard();
+                    }, 300);
+                    this.showToast('Recalculation complete', 'success');
+                } catch (err) {
+                    console.error('Failed to recalc last 10h', err);
+                    this.showToast('Failed to recalc last 10h', 'error');
+                }
+            });
+        }
+        
         // Settings modal
         document.getElementById('showSettings').addEventListener('click', () => this.showSettings());
         document.getElementById('saveSettings').addEventListener('click', () => this.saveSettings());
