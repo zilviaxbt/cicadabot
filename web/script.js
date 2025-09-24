@@ -13,6 +13,8 @@ class GalaSwapWebInterface {
         this.initializeArbitrageControls();
         this.initializeLunarControls();
         this.initializePrimeControls();
+        this.initializeTokenSwapControls();
+        this.initializeTokenSwap2Controls();
         this.checkConnection();
         this.loadSettings();
         this.loadTransactionHistory(); // Load transaction history from API
@@ -60,12 +62,24 @@ class GalaSwapWebInterface {
         // Prime Info Modal
         document.getElementById('showPrimeInfo').addEventListener('click', () => this.showPrimeInfo());
         
+        // Token Swap Info Modal
+        document.getElementById('showTokenSwapInfo').addEventListener('click', () => this.showTokenSwapInfo());
+        
         // Close button for prime info modal
         const primeInfoModal = document.getElementById('primeInfoModal');
         if (primeInfoModal) {
             const closeBtn = primeInfoModal.querySelector('.modal-close');
             if (closeBtn) {
                 closeBtn.addEventListener('click', () => this.hidePrimeInfo());
+            }
+        }
+        
+        // Close button for token swap info modal
+        const tokenSwapInfoModal = document.getElementById('tokenSwapInfoModal');
+        if (tokenSwapInfoModal) {
+            const closeBtn = tokenSwapInfoModal.querySelector('.modal-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.hideTokenSwapInfo());
             }
         }
         
@@ -100,6 +114,12 @@ class GalaSwapWebInterface {
         document.getElementById('primeInfoModal').addEventListener('click', (e) => {
             if (e.target.id === 'primeInfoModal') {
                 this.hidePrimeInfo();
+            }
+        });
+        
+        document.getElementById('tokenSwapInfoModal').addEventListener('click', (e) => {
+            if (e.target.id === 'tokenSwapInfoModal') {
+                this.hideTokenSwapInfo();
             }
         });
         
@@ -720,6 +740,14 @@ class GalaSwapWebInterface {
         document.getElementById('primeInfoModal').style.display = 'none';
     }
 
+    showTokenSwapInfo() {
+        document.getElementById('tokenSwapInfoModal').style.display = 'flex';
+    }
+
+    hideTokenSwapInfo() {
+        document.getElementById('tokenSwapInfoModal').style.display = 'none';
+    }
+
     // Arbitrage Strategy Management
     async initializeArbitrageControls() {
         const startBtn = document.getElementById('startStrategyBtn');
@@ -905,7 +933,8 @@ class GalaSwapWebInterface {
 
         console.log('Updating arbitrage status:', status);
 
-        if (status.isRunning) {
+        // Don't show Pool Shark under Arbitrage Strategies
+        if (status.isRunning && status.strategy !== 'TokenSwapStrategy') {
             statusElement.innerHTML = `
                 <span class="status-dot online"></span>
                 <span>Running: ${status.strategy || 'Unknown Strategy'}</span>
@@ -1490,6 +1519,684 @@ class GalaSwapWebInterface {
             clearInterval(this.lunarResultsInterval);
             this.lunarResultsInterval = null;
         }
+    }
+
+    // Pool Shark Management
+    async initializeTokenSwapControls() {
+        const getQuoteBtn = document.getElementById('getSwap2QuoteBtn');
+        const executeBtn = document.getElementById('executeSwap2Btn');
+        const startBtn = document.getElementById('startSwap2StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap2StrategyBtn');
+        const refreshBtn = document.getElementById('refreshSwap2StatusBtn');
+
+        if (getQuoteBtn) getQuoteBtn.addEventListener('click', () => this.getSwap2Quote());
+        if (executeBtn) executeBtn.addEventListener('click', () => this.executeSwap2());
+        if (startBtn) startBtn.addEventListener('click', () => this.startSwap2Strategy());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopSwap2Strategy());
+        if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshSwap2Status());
+
+        // Load initial status
+        await this.refreshSwap2Status();
+    }
+
+    async getSwap2Quote() {
+        const tokenIn = document.getElementById('swap2TokenIn').value;
+        const tokenOut = document.getElementById('swap2TokenOut').value;
+        const amountIn = document.getElementById('swap2Amount').value;
+        const slippage = document.getElementById('swap2Slippage').value;
+        const feeTier = parseInt(document.getElementById('swap2FeeTier').value);
+
+        if (!amountIn || parseFloat(amountIn) <= 0) {
+            this.showToast('Please enter a valid amount', 'error');
+            return;
+        }
+
+        this.showToast('Getting quote...', 'info');
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/quote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tokenIn,
+                    tokenOut,
+                    amountIn,
+                    slippageTolerance: parseFloat(slippage),
+                    feeTier
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.currentSwap2Quote = data.quote;
+                this.displaySwap2Quote(data.quote);
+                document.getElementById('executeSwap2Btn').disabled = false;
+                this.showToast('Quote received successfully', 'success');
+            } else {
+                this.showToast(`Quote failed: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            this.showToast(`Error getting quote: ${error.message}`, 'error');
+        }
+    }
+
+    displaySwap2Quote(quote) {
+        document.getElementById('swap2AmountOut').textContent = quote.amountOut;
+        document.getElementById('swap2PriceImpact').textContent = `${quote.priceImpact}%`;
+        document.getElementById('swap2CurrentPrice').textContent = quote.currentPrice;
+        document.getElementById('swap2NewPrice').textContent = quote.newPrice;
+        document.getElementById('swap2QuoteFeeTier').textContent = `${quote.feeTier} (${(quote.feeTier / 100).toFixed(2)}%)`;
+        
+        document.getElementById('swap2QuoteResults').style.display = 'block';
+    }
+
+    async executeSwap2() {
+        if (!this.currentSwap2Quote) {
+            this.showToast('Please get a quote first', 'error');
+            return;
+        }
+
+        const tokenIn = document.getElementById('swap2TokenIn').value;
+        const tokenOut = document.getElementById('swap2TokenOut').value;
+        const amountIn = document.getElementById('swap2Amount').value;
+        const slippage = document.getElementById('swap2Slippage').value;
+        const feeTier = parseInt(document.getElementById('swap2FeeTier').value);
+
+        // Confirmation dialog
+        const confirmMessage = `Execute swap: ${amountIn} ${this.getTokenSymbol(tokenIn)} → ${this.currentSwap2Quote.amountOut} ${this.getTokenSymbol(tokenOut)}?`;
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        this.showToast('Executing swap...', 'info');
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/swap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tokenIn,
+                    tokenOut,
+                    amountIn,
+                    slippageTolerance: parseFloat(slippage),
+                    feeTier
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.showToast('Swap executed successfully!', 'success');
+                this.addTransaction({
+                    type: 'Swap (Strategy 2)',
+                    from: `${amountIn} ${this.getTokenSymbol(tokenIn)}`,
+                    to: `${data.result.amountOut} ${this.getTokenSymbol(tokenOut)}`,
+                    hash: data.result.transactionHash,
+                    time: new Date().toLocaleString()
+                });
+                this.loadPortfolio();
+                this.currentSwap2Quote = null;
+                document.getElementById('executeSwap2Btn').disabled = true;
+                document.getElementById('swap2QuoteResults').style.display = 'none';
+            } else {
+                this.showToast(`Swap failed: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            this.showToast(`Error executing swap: ${error.message}`, 'error');
+        }
+    }
+
+    async startSwap2Strategy() {
+        try {
+            const config = {
+                tokenIn: document.getElementById('swap2TokenIn').value,
+                tokenOut: document.getElementById('swap2TokenOut').value,
+                amountIn: document.getElementById('swap2Amount').value,
+                slippageTolerance: parseFloat(document.getElementById('swap2Slippage').value),
+                feeTier: parseInt(document.getElementById('swap2FeeTier').value),
+                intervalSeconds: parseInt(document.getElementById('swap2Interval').value),
+                minAmountOut: document.getElementById('swap2MinAmountOut').value,
+                enabled: true
+            };
+
+            if (!config.amountIn || parseFloat(config.amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            if (!config.minAmountOut || parseFloat(config.minAmountOut) < 0) {
+                this.showToast('Please enter a valid minimum amount out threshold', 'error');
+                return;
+            }
+
+            this.showToast('Starting Pool Shark...', 'info');
+            this.updateSwap2Status({ isRunning: true });
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ config })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark started successfully', 'success');
+                this.startSwap2ResultsPolling();
+            } else {
+                this.showToast(`Failed to start strategy: ${result.error}`, 'error');
+                this.updateSwap2Status({ isRunning: false });
+            }
+        } catch (error) {
+            console.error('Error starting Token Swap strategy:', error);
+            this.showToast('Error starting Pool Shark', 'error');
+            this.updateSwap2Status({ isRunning: false });
+        }
+    }
+
+    async stopSwap2Strategy() {
+        try {
+            this.showToast('Stopping Pool Shark...', 'info');
+            this.updateSwap2Status({ isRunning: false });
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap/stop`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark stopped successfully', 'success');
+                this.stopSwap2ResultsPolling();
+            } else {
+                this.showToast(`Failed to stop strategy: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error stopping Token Swap strategy:', error);
+            this.showToast('Error stopping Pool Shark', 'error');
+        }
+    }
+
+    async refreshSwap2Status() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap/status`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.updateSwap2Status({ isRunning: result.isRunning });
+            } else {
+                this.updateSwap2Status({ isRunning: false });
+            }
+        } catch (error) {
+            console.error('Error refreshing Pool Shark status:', error);
+            this.updateSwap2Status({ isRunning: false });
+        }
+    }
+
+    updateSwap2Status(status) {
+        const statusElement = document.getElementById('tokenSwapStatus');
+        const startBtn = document.getElementById('startSwap2StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap2StrategyBtn');
+
+        if (status.isRunning) {
+            statusElement.innerHTML = '<span class="status-dot online"></span><span>Running</span>';
+            if (startBtn) startBtn.disabled = true;
+            if (stopBtn) stopBtn.disabled = false;
+        } else {
+            statusElement.innerHTML = '<span class="status-dot offline"></span><span>Stopped</span>';
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+        }
+    }
+
+    startSwap2ResultsPolling() {
+        // Poll for results every 10 seconds
+        this.swap2ResultsInterval = setInterval(() => {
+            this.loadSwap2Results();
+        }, 10000);
+    }
+
+    stopSwap2ResultsPolling() {
+        if (this.swap2ResultsInterval) {
+            clearInterval(this.swap2ResultsInterval);
+            this.swap2ResultsInterval = null;
+        }
+    }
+
+    async loadSwap2Results() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/arbitrage/results`);
+            const data = await response.json();
+
+            if (data.success && data.results) {
+                this.displaySwap2Results(data.results);
+            }
+        } catch (error) {
+            console.error('Error loading Token Swap results:', error);
+        }
+    }
+
+    displaySwap2Results(results) {
+        const resultsContainer = document.getElementById('swap2Results');
+        
+        // Filter results for Pool Shark
+        const swap2Results = results.filter(result => 
+            result.type && result.type.includes('Pool Shark')
+        );
+
+        if (swap2Results.length === 0) {
+            resultsContainer.innerHTML = '<div class="no-results">No results yet</div>';
+            return;
+        }
+
+        const resultsHtml = swap2Results.slice(-8).map(result => {
+            let statusClass = 'info';
+            let statusIcon = 'fa-info-circle';
+            
+            if (result.action === 'EXECUTED') {
+                statusClass = 'success';
+                statusIcon = 'fa-check-circle';
+            } else if (result.action === 'SKIPPED') {
+                statusClass = 'warning';
+                statusIcon = 'fa-pause-circle';
+            } else if (result.action === 'FAILED' || result.action === 'ERROR' || result.action === 'QUOTE_FAILED') {
+                statusClass = 'error';
+                statusIcon = 'fa-times-circle';
+            }
+            
+            return `
+                <div class="result-item ${statusClass}">
+                    <div class="result-header">
+                        <i class="fas ${statusIcon}"></i>
+                        <span class="result-type">${result.action || 'SWAP'}</span>
+                        <span class="result-time">${new Date(result.timestamp).toLocaleTimeString()}</span>
+                        ${result.swapNumber ? `<span class="result-swap-number">#${result.swapNumber}</span>` : ''}
+                    </div>
+                    <div class="result-details">
+                        <div class="result-pair">${result.tokenIn} → ${result.tokenOut}</div>
+                        <div class="result-amount">Amount: ${result.amount}</div>
+                    </div>
+                    ${result.expectedAmountOut ? `
+                        <div class="result-quote">
+                            <span class="quote-label">Expected:</span>
+                            <span class="quote-value">${result.expectedAmountOut} ${result.tokenOut}</span>
+                            ${result.minAmountOut ? `<span class="quote-threshold">(Min: ${result.minAmountOut})</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${result.amountOut ? `
+                        <div class="result-executed">
+                            <span class="executed-label">Actual:</span>
+                            <span class="executed-value">${result.amountOut} ${result.tokenOut}</span>
+                        </div>
+                    ` : ''}
+                    ${result.transactionHash ? `
+                        <div class="result-tx">
+                            <span class="tx-label">TX:</span>
+                            <span class="tx-hash">${result.transactionHash.substring(0, 10)}...</span>
+                        </div>
+                    ` : ''}
+                    ${result.reason ? `<div class="result-reason">${result.reason}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = resultsHtml;
+    }
+
+    // Pool Shark 2 Management
+    async initializeTokenSwap2Controls() {
+        const getQuoteBtn = document.getElementById('getSwap3QuoteBtn');
+        const executeBtn = document.getElementById('executeSwap3Btn');
+        const startBtn = document.getElementById('startSwap3StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap3StrategyBtn');
+        const refreshBtn = document.getElementById('refreshSwap3StatusBtn');
+
+        if (getQuoteBtn) getQuoteBtn.addEventListener('click', () => this.getSwap3Quote());
+        if (executeBtn) executeBtn.addEventListener('click', () => this.executeSwap3());
+        if (startBtn) startBtn.addEventListener('click', () => this.startSwap3Strategy());
+        if (stopBtn) stopBtn.addEventListener('click', () => this.stopSwap3Strategy());
+        if (refreshBtn) refreshBtn.addEventListener('click', () => this.refreshSwap3Status());
+
+        // Info modal
+        const infoBtn = document.getElementById('showTokenSwap2Info');
+        if (infoBtn) {
+            infoBtn.addEventListener('click', () => this.showModal('tokenSwap2InfoModal'));
+        }
+
+        // Initial status check
+        this.refreshSwap3Status();
+    }
+
+    async getSwap3Quote() {
+        try {
+            const tokenIn = document.getElementById('swap3TokenIn').value;
+            const tokenOut = document.getElementById('swap3TokenOut').value;
+            const amountIn = document.getElementById('swap3Amount').value;
+            const slippageTolerance = parseFloat(document.getElementById('swap3Slippage').value);
+            const feeTier = parseInt(document.getElementById('swap3FeeTier').value);
+
+            if (!amountIn || parseFloat(amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            this.showToast('Getting quote...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/quote`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tokenIn,
+                    tokenOut,
+                    amountIn,
+                    slippageTolerance,
+                    feeTier
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.displaySwap3Quote(result.quote);
+                this.showToast('Quote retrieved successfully', 'success');
+            } else {
+                this.showToast(`Failed to get quote: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error getting quote:', error);
+            this.showToast('Error getting quote', 'error');
+        }
+    }
+
+    displaySwap3Quote(quote) {
+        document.getElementById('swap3QuoteAmountOut').textContent = quote.amountOut || '-';
+        document.getElementById('swap3QuotePriceImpact').textContent = quote.priceImpact ? `${quote.priceImpact}%` : '-';
+        document.getElementById('swap3QuoteFeeTier').textContent = quote.feeTier ? `${quote.feeTier / 10000}%` : '-';
+    }
+
+    async executeSwap3() {
+        try {
+            const tokenIn = document.getElementById('swap3TokenIn').value;
+            const tokenOut = document.getElementById('swap3TokenOut').value;
+            const amountIn = document.getElementById('swap3Amount').value;
+            const slippageTolerance = parseFloat(document.getElementById('swap3Slippage').value);
+            const feeTier = parseInt(document.getElementById('swap3FeeTier').value);
+
+            if (!amountIn || parseFloat(amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            this.showToast('Executing swap...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/swap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tokenIn,
+                    tokenOut,
+                    amountIn,
+                    slippageTolerance,
+                    feeTier
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Swap executed successfully', 'success');
+                this.refreshSwap3Status();
+                this.loadSwap3Results();
+            } else {
+                this.showToast(`Swap failed: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error executing swap:', error);
+            this.showToast('Error executing swap', 'error');
+        }
+    }
+
+    async startSwap3Strategy() {
+        try {
+            const config = {
+                tokenIn: document.getElementById('swap3TokenIn').value,
+                tokenOut: document.getElementById('swap3TokenOut').value,
+                amountIn: document.getElementById('swap3Amount').value,
+                slippageTolerance: parseFloat(document.getElementById('swap3Slippage').value),
+                feeTier: parseInt(document.getElementById('swap3FeeTier').value),
+                intervalSeconds: parseInt(document.getElementById('swap3Interval').value),
+                minAmountOut: document.getElementById('swap3MinAmountOut').value,
+                enabled: true
+            };
+
+            if (!config.amountIn || parseFloat(config.amountIn) <= 0) {
+                this.showToast('Please enter a valid amount', 'error');
+                return;
+            }
+
+            if (!config.minAmountOut || parseFloat(config.minAmountOut) < 0) {
+                this.showToast('Please enter a valid minimum amount out threshold', 'error');
+                return;
+            }
+
+            this.showToast('Starting Pool Shark 2...', 'info');
+            this.updateSwap3Status({ isRunning: true });
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-2/start`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ config })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 2 started successfully', 'success');
+                this.startSwap3ResultsPolling();
+            } else {
+                this.showToast(`Failed to start strategy: ${result.error}`, 'error');
+                this.updateSwap3Status({ isRunning: false });
+            }
+        } catch (error) {
+            console.error('Error starting Pool Shark 2 strategy:', error);
+            this.showToast('Error starting Pool Shark 2', 'error');
+            this.updateSwap3Status({ isRunning: false });
+        }
+    }
+
+    async stopSwap3Strategy() {
+        try {
+            this.showToast('Stopping Pool Shark 2...', 'info');
+
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-2/stop`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showToast('Pool Shark 2 stopped successfully', 'success');
+                this.updateSwap3Status({ isRunning: false });
+                this.stopSwap3ResultsPolling();
+            } else {
+                this.showToast(`Failed to stop strategy: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error stopping Pool Shark 2 strategy:', error);
+            this.showToast('Error stopping Pool Shark 2', 'error');
+        }
+    }
+
+    async refreshSwap3Status() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/token-swap-2/status`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.updateSwap3Status(result);
+            }
+        } catch (error) {
+            console.error('Error refreshing Pool Shark 2 status:', error);
+        }
+    }
+
+    updateSwap3Status(status) {
+        const statusElement = document.getElementById('swap3Status');
+        const startBtn = document.getElementById('startSwap3StrategyBtn');
+        const stopBtn = document.getElementById('stopSwap3StrategyBtn');
+
+        if (status.isRunning) {
+            statusElement.innerHTML = `
+                <span class="status-dot online"></span>
+                <span>Running</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.style.opacity = '0.5';
+                startBtn.style.cursor = 'not-allowed';
+                startBtn.style.pointerEvents = 'none';
+                startBtn.classList.add('disabled');
+            }
+            if (stopBtn) {
+                stopBtn.disabled = false;
+                stopBtn.style.opacity = '1';
+                stopBtn.style.cursor = 'pointer';
+                stopBtn.style.pointerEvents = 'auto';
+                stopBtn.classList.remove('disabled');
+            }
+        } else {
+            statusElement.innerHTML = `
+                <span class="status-dot offline"></span>
+                <span>Stopped</span>
+            `;
+            if (startBtn) {
+                startBtn.disabled = false;
+                startBtn.style.opacity = '1';
+                startBtn.style.cursor = 'pointer';
+                startBtn.style.pointerEvents = 'auto';
+                startBtn.classList.remove('disabled');
+            }
+            if (stopBtn) {
+                stopBtn.disabled = true;
+                stopBtn.style.opacity = '0.5';
+                stopBtn.style.cursor = 'not-allowed';
+                stopBtn.style.pointerEvents = 'none';
+                stopBtn.classList.add('disabled');
+            }
+        }
+    }
+
+    startSwap3ResultsPolling() {
+        if (this.swap3ResultsInterval) {
+            clearInterval(this.swap3ResultsInterval);
+        }
+        
+        this.swap3ResultsInterval = setInterval(() => {
+            this.loadSwap3Results();
+        }, 5000);
+    }
+
+    stopSwap3ResultsPolling() {
+        if (this.swap3ResultsInterval) {
+            clearInterval(this.swap3ResultsInterval);
+            this.swap3ResultsInterval = null;
+        }
+    }
+
+    async loadSwap3Results() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/api/transactions?limit=50`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displaySwap3Results(data.results);
+            }
+        } catch (error) {
+            console.error('Error loading Pool Shark 2 results:', error);
+        }
+    }
+
+    displaySwap3Results(results) {
+        const resultsContainer = document.getElementById('swap3Results');
+        
+        // Filter results for Pool Shark 2
+        const swap3Results = results.filter(result => 
+            result.type && result.type.includes('Pool Shark 2')
+        );
+
+        if (swap3Results.length === 0) {
+            resultsContainer.innerHTML = '<div class="no-results">No results yet</div>';
+            return;
+        }
+
+        const resultsHtml = swap3Results.slice(-8).map(result => {
+            let statusClass = 'info';
+            let statusIcon = 'fa-info-circle';
+            
+            if (result.action === 'EXECUTED') {
+                statusClass = 'success';
+                statusIcon = 'fa-check-circle';
+            } else if (result.action === 'SKIPPED') {
+                statusClass = 'warning';
+                statusIcon = 'fa-pause-circle';
+            } else if (result.action === 'FAILED' || result.action === 'ERROR' || result.action === 'QUOTE_FAILED') {
+                statusClass = 'error';
+                statusIcon = 'fa-times-circle';
+            }
+            
+            return `
+                <div class="result-item ${statusClass}">
+                    <div class="result-header">
+                        <i class="fas ${statusIcon}"></i>
+                        <span class="result-type">${result.action || 'SWAP'}</span>
+                        <span class="result-time">${new Date(result.timestamp).toLocaleTimeString()}</span>
+                        ${result.swapNumber ? `<span class="result-swap-number">#${result.swapNumber}</span>` : ''}
+                    </div>
+                    <div class="result-details">
+                        <div class="result-pair">${result.tokenIn} → ${result.tokenOut}</div>
+                        <div class="result-amount">Amount: ${result.amount}</div>
+                    </div>
+                    ${result.expectedAmountOut ? `
+                        <div class="result-quote">
+                            <span class="quote-label">Expected:</span>
+                            <span class="quote-value">${result.expectedAmountOut} ${result.tokenOut}</span>
+                            ${result.minAmountOut ? `<span class="quote-threshold">(Min: ${result.minAmountOut})</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${result.amountOut ? `
+                        <div class="result-executed">
+                            <span class="executed-label">Actual:</span>
+                            <span class="executed-value">${result.amountOut} ${result.tokenOut}</span>
+                        </div>
+                    ` : ''}
+                    ${result.transactionHash ? `
+                        <div class="result-tx">
+                            <span class="tx-label">TX:</span>
+                            <span class="tx-hash">${result.transactionHash.substring(0, 10)}...</span>
+                        </div>
+                    ` : ''}
+                    ${result.reason ? `<div class="result-reason">${result.reason}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+
+        resultsContainer.innerHTML = resultsHtml;
     }
 }
 

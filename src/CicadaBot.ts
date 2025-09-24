@@ -470,6 +470,7 @@ export class CicadaBot {
 
   // Arbitrage Strategy Management
   private currentStrategy: any = null;
+  private strategies: Map<string, any> = new Map(); // Support multiple strategies
   private strategyResults: any[] = [];
 
   /**
@@ -477,9 +478,15 @@ export class CicadaBot {
    */
   public async startArbitrageStrategy(strategyName: string, config: any = {}) {
     try {
-      // Stop any existing strategy
-      if (this.currentStrategy) {
+      // For non-Pool Shark strategies, stop any existing strategy
+      if (strategyName !== 'token-swap' && strategyName !== 'token-swap-2' && this.currentStrategy) {
         await this.stopArbitrageStrategy();
+      }
+      
+      // For Pool Shark strategies, check if already running
+      if ((strategyName === 'token-swap' || strategyName === 'token-swap-2') && this.strategies.has(strategyName)) {
+        this.logger.warn(`Strategy '${strategyName}' is already running`);
+        return;
       }
 
       this.logger.info(`Starting arbitrage strategy: ${strategyName}`, config);
@@ -515,6 +522,14 @@ export class CicadaBot {
           const { PrimeCicadaStrategy } = await import('./strategies/PrimeIntervalStrategy');
           StrategyClass = PrimeCicadaStrategy;
           break;
+        case 'token-swap':
+          const { TokenSwapStrategy } = await import('./strategies/TokenSwapStrategy');
+          StrategyClass = TokenSwapStrategy;
+          break;
+        case 'token-swap-2':
+          const { TokenSwap2Strategy } = await import('./strategies/TokenSwap2Strategy');
+          StrategyClass = TokenSwap2Strategy;
+          break;
         default:
           throw new Error(`Unknown strategy: ${strategyName}`);
       }
@@ -528,8 +543,32 @@ export class CicadaBot {
         ...config
       };
 
-      // Lunar strategy specific defaults
-      if (strategyName === 'lunar') {
+      // Strategy-specific default configs
+        if (strategyName === 'token-swap') {
+          defaultConfig = {
+            tokenIn: 'GALA|Unit|none|none',
+            tokenOut: 'GUSDC|Unit|none|none',
+            amountIn: '10',
+            slippageTolerance: 1.0,
+            feeTier: 500,
+            intervalSeconds: 30,
+            minAmountOut: '9.5', // Minimum amountOut threshold (5% below expected)
+            enabled: true,
+            ...config
+          };
+        } else if (strategyName === 'token-swap-2') {
+          defaultConfig = {
+            tokenIn: 'GUSDC|Unit|none|none',
+            tokenOut: 'GALA|Unit|none|none',
+            amountIn: '10',
+            slippageTolerance: 1.0,
+            feeTier: 500,
+            intervalSeconds: 30,
+            minAmountOut: '9.5', // Minimum amountOut threshold (5% below expected)
+            enabled: true,
+            ...config
+          };
+        } else if (strategyName === 'lunar') {
         defaultConfig = {
           minTradeAmount: '10',
           maxTradeAmount: '100',
@@ -560,8 +599,15 @@ export class CicadaBot {
         };
       }
 
-      this.currentStrategy = new StrategyClass(this, defaultConfig);
-      await this.currentStrategy.start();
+      const strategyInstance = new StrategyClass(this, defaultConfig);
+      await strategyInstance.start();
+
+      // Store strategy instance
+      if (strategyName === 'token-swap' || strategyName === 'token-swap-2') {
+        this.strategies.set(strategyName, strategyInstance);
+      } else {
+        this.currentStrategy = strategyInstance;
+      }
 
       this.logger.info(`Arbitrage strategy '${strategyName}' started successfully`);
 
@@ -581,21 +627,72 @@ export class CicadaBot {
   /**
    * Stop the current arbitrage strategy
    */
-  public async stopArbitrageStrategy() {
+  public async stopArbitrageStrategy(strategyName?: string) {
     try {
-      if (!this.currentStrategy) {
-        this.logger.warn('No arbitrage strategy is currently running');
-        return {
-          status: 'stopped',
-          message: 'No strategy was running'
-        };
+      if (strategyName) {
+        // Stop specific strategy
+        if (strategyName === 'token-swap' || strategyName === 'token-swap-2') {
+          const strategy = this.strategies.get(strategyName);
+          if (!strategy) {
+            this.logger.warn(`Strategy '${strategyName}' is not running`);
+            return {
+              status: 'stopped',
+              message: `Strategy '${strategyName}' was not running`
+            };
+          }
+          
+          this.logger.info(`Stopping strategy: ${strategyName}`);
+          await strategy.stop();
+          this.strategies.delete(strategyName);
+          
+          this.logger.info(`Strategy '${strategyName}' stopped successfully`);
+          return {
+            status: 'stopped',
+            strategy: strategyName,
+            message: `Strategy '${strategyName}' stopped successfully`
+          };
+        } else {
+          // Stop non-Pool Shark strategy
+          if (!this.currentStrategy) {
+            this.logger.warn('No arbitrage strategy is currently running');
+            return {
+              status: 'stopped',
+              message: 'No strategy was running'
+            };
+          }
+
+          this.logger.info('Stopping arbitrage strategy');
+          await this.currentStrategy.stop();
+          this.currentStrategy = null;
+
+          this.logger.info('Arbitrage strategy stopped successfully');
+        }
+      } else {
+        // Stop all strategies
+        if (!this.currentStrategy && this.strategies.size === 0) {
+          this.logger.warn('No arbitrage strategies are currently running');
+          return {
+            status: 'stopped',
+            message: 'No strategies were running'
+          };
+        }
+
+        this.logger.info('Stopping all arbitrage strategies');
+        
+        // Stop current strategy
+        if (this.currentStrategy) {
+          await this.currentStrategy.stop();
+          this.currentStrategy = null;
+        }
+        
+        // Stop all Pool Shark strategies
+        for (const [, strategy] of this.strategies) {
+          await strategy.stop();
+        }
+        this.strategies.clear();
+
+        this.logger.info('All arbitrage strategies stopped successfully');
       }
-
-      this.logger.info('Stopping arbitrage strategy');
-      this.currentStrategy.stop();
-      this.currentStrategy = null;
-
-      this.logger.info('Arbitrage strategy stopped successfully');
 
       return {
         status: 'stopped',
@@ -614,7 +711,10 @@ export class CicadaBot {
    */
   public getArbitrageStatus() {
     let strategyName = null;
+    let isRunning = false;
+    
     if (this.currentStrategy) {
+      isRunning = true;
       // Get user-friendly strategy name
       if (this.currentStrategy.constructor.name === 'PrimeCicadaStrategy') {
         strategyName = 'PrimeCicadaStrategy';
@@ -623,10 +723,19 @@ export class CicadaBot {
       }
     }
     
+    // Check if any Pool Shark strategies are running
+    if (this.strategies.size > 0) {
+      isRunning = true;
+      if (!strategyName) {
+        strategyName = 'Multiple Pool Shark Strategies';
+      }
+    }
+    
     return {
-      isRunning: this.currentStrategy !== null,
+      isRunning: isRunning,
       strategy: strategyName,
-      resultsCount: this.strategyResults.length
+      resultsCount: this.strategyResults.length,
+      runningStrategies: Array.from(this.strategies.keys())
     };
   }
 
@@ -641,6 +750,16 @@ export class CicadaBot {
    * Get current strategy instance
    */
   public getCurrentStrategy() {
+    return this.currentStrategy;
+  }
+
+  /**
+   * Get specific strategy instance
+   */
+  public getStrategy(strategyName: string) {
+    if (strategyName === 'token-swap' || strategyName === 'token-swap-2') {
+      return this.strategies.get(strategyName);
+    }
     return this.currentStrategy;
   }
 

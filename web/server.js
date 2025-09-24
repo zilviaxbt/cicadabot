@@ -258,7 +258,7 @@ class WebServer {
                 }
 
                 const currentStrategy = this.bot.getCurrentStrategy();
-                const isLunarRunning = currentStrategy && currentStrategy.constructor.name === 'LunarPhaseStrategy';
+                const isLunarRunning = currentStrategy && currentStrategy.constructor.name === 'LunarPhaseStrategy' && currentStrategy.isRunning;
                 
                 res.json({
                     success: true,
@@ -358,9 +358,10 @@ class WebServer {
                 }
 
                 const currentStrategy = this.bot.getCurrentStrategy();
-                // Only show as running if it's an actual arbitrage strategy (not Prime or Lunar)
+                // Only show as running if it's an actual arbitrage strategy (not Prime or Lunar) and is actually running
                 const isArbitrageRunning = currentStrategy && 
-                    !['PrimeCicadaStrategy', 'LunarPhaseStrategy'].includes(currentStrategy.constructor.name);
+                    !['PrimeCicadaStrategy', 'LunarPhaseStrategy'].includes(currentStrategy.constructor.name) &&
+                    currentStrategy.isRunning;
                 
                 res.json({
                     success: true,
@@ -543,7 +544,7 @@ class WebServer {
                 }
 
                 const currentStrategy = this.bot.getCurrentStrategy();
-                const isPrimeRunning = currentStrategy && currentStrategy.constructor.name === 'PrimeCicadaStrategy';
+                const isPrimeRunning = currentStrategy && currentStrategy.constructor.name === 'PrimeCicadaStrategy' && currentStrategy.isRunning;
                 
                 res.json({
                     success: true,
@@ -557,6 +558,172 @@ class WebServer {
                 res.status(500).json({ 
                     success: false, 
                     error: 'Failed to get prime status' 
+                });
+            }
+        });
+
+        // Pool Shark Endpoints
+        this.app.post('/api/token-swap/start', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const { config } = req.body;
+                Logger.info('Starting Pool Shark via API', config);
+
+                await this.bot.startArbitrageStrategy('token-swap', config);
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark started successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark start API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to start Pool Shark' 
+                });
+            }
+        });
+
+        this.app.post('/api/token-swap/stop', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                Logger.info('Stopping Pool Shark via API');
+                await this.bot.stopArbitrageStrategy('token-swap');
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark stopped successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark stop API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to stop Pool Shark' 
+                });
+            }
+        });
+
+        this.app.get('/api/token-swap/status', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const tokenSwapStrategy = this.bot.getStrategy('token-swap');
+                const isTokenSwapRunning = tokenSwapStrategy !== null && tokenSwapStrategy.isRunning;
+                
+                res.json({
+                    success: true,
+                    isRunning: isTokenSwapRunning,
+                    strategy: isTokenSwapRunning ? 'TokenSwapStrategy' : null,
+                    resultsCount: isTokenSwapRunning ? this.bot.getArbitrageResults().filter(r => r.type && r.type.includes('Pool Shark')).length : 0
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark status API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to get Pool Shark status' 
+                });
+            }
+        });
+
+        // Pool Shark 2 Endpoints
+        this.app.post('/api/token-swap-2/start', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const { config } = req.body;
+                Logger.info('Starting Pool Shark 2 via API', config);
+
+                await this.bot.startArbitrageStrategy('token-swap-2', config);
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 2 started successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 2 start API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to start Pool Shark 2' 
+                });
+            }
+        });
+
+        this.app.post('/api/token-swap-2/stop', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                Logger.info('Stopping Pool Shark 2 via API');
+                await this.bot.stopArbitrageStrategy('token-swap-2');
+                
+                res.json({
+                    success: true,
+                    message: 'Pool Shark 2 stopped successfully'
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 2 stop API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: error.message || 'Failed to stop Pool Shark 2' 
+                });
+            }
+        });
+
+        this.app.get('/api/token-swap-2/status', async (req, res) => {
+            try {
+                if (!this.bot) {
+                    return res.status(500).json({ 
+                        success: false, 
+                        error: 'Bot not initialized' 
+                    });
+                }
+
+                const tokenSwap2Strategy = this.bot.getStrategy('token-swap-2');
+                const isTokenSwap2Running = tokenSwap2Strategy !== null && tokenSwap2Strategy.isRunning;
+                
+                res.json({
+                    success: true,
+                    isRunning: isTokenSwap2Running,
+                    strategy: isTokenSwap2Running ? 'TokenSwap2Strategy' : null,
+                    resultsCount: isTokenSwap2Running ? this.bot.getArbitrageResults().filter(r => r.type && r.type.includes('Pool Shark 2')).length : 0
+                });
+
+            } catch (error) {
+                Logger.error('Pool Shark 2 status API error', error);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Failed to get Pool Shark 2 status' 
                 });
             }
         });
