@@ -380,6 +380,251 @@
                 </div>
                 </section>
 
+                <!-- Pool Shark Panel -->
+                <section class="token-swap-panel collapsible-panel collapsed">
+                <div class="panel-header collapsible-header" onclick="togglePanel('token-swap-panel')">
+                    <h3><i class="fas fa-fish"></i> Pool Shark</h3>
+                    <div class="header-controls">
+                        <button id="showTokenSwapInfo" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">
+                            <i class="fas fa-info-circle"></i> Info
+                        </button>
+                        <div class="token-swap-status">
+                            <span id="tokenSwapStatus" class="status-indicator">
+                                <span class="status-dot offline"></span>
+                                <span>Stopped</span>
+                            </span>
+                        </div>
+                        <button class="collapse-toggle">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="token-swap-content collapsible-content collapsed">
+                    <!-- Pool Shark Configuration -->
+                    <div class="token-swap-config-section">
+                        <h4><i class="fas fa-cog"></i> Configuration</h4>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="swap2TokenIn">From Token</label>
+                                <select id="swap2TokenIn" class="config-select">
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap2TokenOut">To Token</label>
+                                <select id="swap2TokenOut" class="config-select">
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap2Amount">Amount</label>
+                                <input type="number" id="swap2Amount" placeholder="0.0" step="0.000001" min="0" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap2Slippage">Slippage Tolerance (%)</label>
+                                <input type="number" id="swap2Slippage" value="1.0" step="0.1" min="0.1" max="50" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap2FeeTier">Fee Tier</label>
+                                <select id="swap2FeeTier" class="config-select">
+                                    <option value="500">0.05% (Low)</option>
+                                    <option value="3000">0.30% (Medium)</option>
+                                    <option value="10000">1.00% (High)</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap2Interval">Auto Swap Interval (seconds)</label>
+                                <input type="number" id="swap2Interval" value="30" step="1" min="5" max="300" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Range: 5-300 seconds (5 seconds to 5 minutes)</small>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap2MinAmountOut">Min Amount Out Threshold</label>
+                                <input type="number" id="swap2MinAmountOut" value="9.5" step="0.1" min="0" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Only execute swap if amountOut ≥ this value</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark Controls -->
+                    <div class="token-swap-controls-section">
+                        <h4><i class="fas fa-play-circle"></i> Controls</h4>
+                        <div class="control-buttons">
+                            <button id="getSwap2QuoteBtn" class="btn btn-primary">
+                                <i class="fas fa-calculator"></i> Get Quote
+                            </button>
+                            <button id="executeSwap2Btn" class="btn btn-success" disabled>
+                                <i class="fas fa-exchange-alt"></i> Execute Swap
+                            </button>
+                            <button id="startSwap2StrategyBtn" class="btn btn-success">
+                                <i class="fas fa-play"></i> Start Pool Shark
+                            </button>
+                            <button id="stopSwap2StrategyBtn" class="btn btn-danger" disabled>
+                                <i class="fas fa-stop"></i> Stop Pool Shark
+                            </button>
+                            <button id="refreshSwap2StatusBtn" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark Quote Results -->
+                    <div id="swap2QuoteResults" class="quote-panel" style="display: none;">
+                        <div class="panel-header">
+                            <h4><i class="fas fa-chart-line"></i> Quote Results</h4>
+                        </div>
+                        <div class="quote-content">
+                            <div class="quote-item">
+                                <span class="label">Amount Out:</span>
+                                <span id="swap2AmountOut" class="value">-</span>
+                            </div>
+                            <div class="quote-item">
+                                <span class="label">Price Impact:</span>
+                                <span id="swap2PriceImpact" class="value">-</span>
+                            </div>
+                            <div class="quote-item">
+                                <span class="label">Current Price:</span>
+                                <span id="swap2CurrentPrice" class="value">-</span>
+                            </div>
+                            <div class="quote-item">
+                                <span class="label">New Price:</span>
+                                <span id="swap2NewPrice" class="value">-</span>
+                            </div>
+                            <div class="quote-item">
+                                <span class="label">Fee Tier:</span>
+                                <span id="swap2QuoteFeeTier" class="value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark Results -->
+                    <div class="token-swap-results-section">
+                        <h4><i class="fas fa-chart-bar"></i> Recent Results</h4>
+                        <div id="swap2Results" class="results-container">
+                            <div class="no-results">No results yet</div>
+                        </div>
+                    </div>
+                </div>
+                </section>
+
+                <!-- Pool Shark 2 Panel -->
+                <section class="token-swap-panel-2 collapsible-panel collapsed">
+                <div class="panel-header collapsible-header" onclick="togglePanel('token-swap-panel-2')">
+                    <h3><i class="fas fa-fish"></i> Pool Shark 2</h3>
+                    <div class="header-controls">
+                        <button id="showTokenSwap2Info" class="btn btn-secondary btn-sm" onclick="event.stopPropagation()">
+                            <i class="fas fa-info-circle"></i> Info
+                        </button>
+                        <div class="strategy-status">
+                            <span id="swap3Status" class="status-indicator">
+                                <span class="status-dot offline"></span>
+                                <span>Stopped</span>
+                            </span>
+                        </div>
+                        <button class="collapse-toggle">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="token-swap-content collapsible-content collapsed">
+                    <!-- Pool Shark 2 Configuration -->
+                    <div class="token-swap-config-section">
+                        <h4><i class="fas fa-cog"></i> Configuration</h4>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label for="swap3TokenIn">From Token</label>
+                                <select id="swap3TokenIn" class="config-select">
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap3TokenOut">To Token</label>
+                                <select id="swap3TokenOut" class="config-select">
+                                    <option value="GUSDC|Unit|none|none">USDC</option>
+                                    <option value="GALA|Unit|none|none">GALA</option>
+                                    <option value="GETH|Unit|none|none">ETH</option>
+                                    <option value="GUSDT|Unit|none|none">USDT</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap3Amount">Amount</label>
+                                <input type="number" id="swap3Amount" placeholder="0.0" step="0.000001" min="0" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap3Slippage">Slippage Tolerance (%)</label>
+                                <input type="number" id="swap3Slippage" value="1.0" step="0.1" min="0.1" max="50" class="config-input">
+                            </div>
+                            <div class="config-item">
+                                <label for="swap3FeeTier">Fee Tier</label>
+                                <select id="swap3FeeTier" class="config-select">
+                                    <option value="500">0.05% (Low)</option>
+                                    <option value="3000">0.30% (Medium)</option>
+                                    <option value="10000">1.00% (High)</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap3Interval">Auto Swap Interval (seconds)</label>
+                                <input type="number" id="swap3Interval" value="30" step="1" min="5" max="300" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Range: 5-300 seconds (5 seconds to 5 minutes)</small>
+                            </div>
+                            <div class="config-item">
+                                <label for="swap3MinAmountOut">Min Amount Out Threshold</label>
+                                <input type="number" id="swap3MinAmountOut" value="9.5" step="0.1" min="0" class="config-input">
+                                <small style="color: #888; font-size: 0.8rem;">Only execute swap if amountOut ≥ this value</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 2 Controls -->
+                    <div class="token-swap-controls-section">
+                        <h4><i class="fas fa-play-circle"></i> Controls</h4>
+                        <div class="control-buttons">
+                            <button id="startSwap3StrategyBtn" class="btn btn-success">
+                                <i class="fas fa-play"></i> Start Pool Shark 2
+                            </button>
+                            <button id="stopSwap3StrategyBtn" class="btn btn-danger" disabled>
+                                <i class="fas fa-stop"></i> Stop Pool Shark 2
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 2 Quote Results -->
+                    <div class="token-swap-quote-section">
+                        <h4><i class="fas fa-calculator"></i> Quote Results</h4>
+                        <div class="quote-display">
+                            <div class="quote-item">
+                                <span class="label">Amount Out:</span>
+                                <span id="swap3QuoteAmountOut" class="value">-</span>
+                            </div>
+                            <div class="quote-item">
+                                <span class="label">Price Impact:</span>
+                                <span id="swap3QuotePriceImpact" class="value">-</span>
+                            </div>
+                            <div class="quote-item">
+                                <span class="label">Fee Tier:</span>
+                                <span id="swap3QuoteFeeTier" class="value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pool Shark 2 Results -->
+                    <div class="token-swap-results-section">
+                        <h4><i class="fas fa-chart-bar"></i> Recent Results</h4>
+                        <div id="swap3Results" class="results-container">
+                            <div class="no-results">No results yet</div>
+                        </div>
+                    </div>
+                </div>
+                </section>
+
                 <!-- Arbitrage Strategy Panel -->
                 <section class="arbitrage-panel collapsible-panel collapsed">
                 <div class="panel-header collapsible-header" onclick="togglePanel('arbitrage-panel')">
@@ -767,6 +1012,245 @@
             </div>
             <div class="modal-footer">
                 <button id="closeLunarInfo" class="btn btn-primary">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pool Shark Info Modal -->
+    <div id="tokenSwapInfoModal" class="modal" style="display: none;">
+        <div class="modal-content strategy-info-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-fish"></i> Pool Shark Information</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="strategy-info-content">
+                    <div class="strategy-overview">
+                        <h4><i class="fas fa-fish"></i> What is Pool Shark?</h4>
+                        <p>Pool Shark is a flexible trading approach that allows you to execute manual token swaps or set up automated periodic swaps. This strategy gives you full control over your trading parameters while providing the option to automate the process.</p>
+                    </div>
+
+                    <div class="strategies-list">
+                        <div class="strategy-item">
+                            <div class="strategy-header">
+                                <h5><i class="fas fa-hand-paper"></i> Manual Trading</h5>
+                                <span class="strategy-difficulty easy">Easy</span>
+                            </div>
+                            <div class="strategy-description">
+                                <p><strong>How it works:</strong> Manually configure your swap parameters and execute trades when you want to. Get quotes before executing to see expected outcomes.</p>
+                                <ul>
+                                    <li><strong>Token Selection:</strong> Choose any token pair (GALA, USDC, ETH, USDT)</li>
+                                    <li><strong>Amount Control:</strong> Set exact amounts to swap</li>
+                                    <li><strong>Quote First:</strong> Get quotes to see price impact and expected output</li>
+                                    <li><strong>Execute When Ready:</strong> Manual execution with confirmation</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="strategy-item">
+                            <div class="strategy-header">
+                                <h5><i class="fas fa-robot"></i> Automated Trading</h5>
+                                <span class="strategy-difficulty medium">Medium</span>
+                            </div>
+                            <div class="strategy-description">
+                                <p><strong>How it works:</strong> Set up automated swaps that execute at regular intervals. Perfect for DCA (Dollar Cost Averaging) strategies or regular rebalancing.</p>
+                                <ul>
+                                    <li><strong>Interval Trading:</strong> Execute swaps every X seconds (5-300 seconds)</li>
+                                    <li><strong>Consistent Parameters:</strong> Same token pair, amount, and settings for each swap</li>
+                                    <li><strong>Start/Stop Control:</strong> Easy to start and stop the automated process</li>
+                                    <li><strong>Real-time Monitoring:</strong> See results and status in real-time</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="strategy-item">
+                            <div class="strategy-header">
+                                <h5><i class="fas fa-cog"></i> Configuration Options</h5>
+                                <span class="strategy-difficulty easy">Easy</span>
+                            </div>
+                            <div class="strategy-description">
+                                <p><strong>Customizable parameters:</strong></p>
+                                <ul>
+                                    <li><strong>Token Pair:</strong> Choose any two tokens from available options</li>
+                                    <li><strong>Swap Amount:</strong> Set the exact amount to swap each time</li>
+                                    <li><strong>Slippage Tolerance:</strong> Set maximum acceptable slippage (0.1% - 50%)</li>
+                                    <li><strong>Fee Tier:</strong> Choose between 0.05%, 0.30%, or 1.00% fees</li>
+                                    <li><strong>Auto Interval:</strong> Set automated swap frequency (5-300 seconds)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="configuration-guide">
+                        <h4><i class="fas fa-cog"></i> Configuration Guide</h4>
+                        <div class="config-explanation">
+                            <div class="config-item-explanation">
+                                <h6>Token Selection</h6>
+                                <p>Choose your token pair carefully. Consider liquidity, volatility, and your trading goals when selecting tokens.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Swap Amount</h6>
+                                <p>Set appropriate amounts based on your risk tolerance and available balance. Start small when testing new strategies.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Slippage Tolerance</h6>
+                                <p>Higher slippage tolerance allows trades to execute in volatile markets but may result in worse prices.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Auto Swap Interval</h6>
+                                <p>Shorter intervals mean more frequent trading but higher gas costs. Longer intervals reduce costs but may miss opportunities.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Min Amount Out Threshold</h6>
+                                <p>Sets a minimum expected output amount. The automated swap will only execute if the quote's amountOut meets or exceeds this threshold. This helps avoid swaps during unfavorable market conditions.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="strategy-warnings">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Important Considerations</h4>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Market Risk:</strong> All trading involves risk. Prices can move against your position, resulting in losses.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Gas Fees:</strong> Each swap transaction incurs gas fees. Frequent automated trading will accumulate these costs.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Balance Requirements:</strong> Ensure you have sufficient balance in the input token for your configured swap amount.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Monitoring:</strong> While automated, it's recommended to monitor your strategy's performance and adjust parameters as needed.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pool Shark 2 Info Modal -->
+    <div id="tokenSwap2InfoModal" class="modal" style="display: none;">
+        <div class="modal-content strategy-info-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-fish"></i> Pool Shark 2 Information</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="strategy-info-content">
+                    <div class="strategy-overview">
+                        <h4><i class="fas fa-fish"></i> What is Pool Shark 2?</h4>
+                        <p>Pool Shark 2 is a second instance of the Pool Shark strategy, allowing you to run two different token swap directions simultaneously. This enables you to have one instance swapping GALA→USDC and another swapping USDC→GALA at the same time.</p>
+                    </div>
+
+                    <div class="strategies-list">
+                        <div class="strategy-item">
+                            <div class="strategy-header">
+                                <h5><i class="fas fa-hand-paper"></i> Manual Trading</h5>
+                                <span class="strategy-difficulty easy">Easy</span>
+                            </div>
+                            <div class="strategy-description">
+                                <p><strong>How it works:</strong> Manually configure your swap parameters and execute trades when you want to. Get quotes before executing to see expected outcomes.</p>
+                                <ul>
+                                    <li><strong>Token Selection:</strong> Choose any token pair (GALA, USDC, ETH, USDT)</li>
+                                    <li><strong>Amount Control:</strong> Set exact amounts to swap</li>
+                                    <li><strong>Quote First:</strong> Get quotes to see price impact and expected output</li>
+                                    <li><strong>Execute When Ready:</strong> Manual execution with confirmation</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="strategy-item">
+                            <div class="strategy-header">
+                                <h5><i class="fas fa-robot"></i> Automated Trading</h5>
+                                <span class="strategy-difficulty medium">Medium</span>
+                            </div>
+                            <div class="strategy-description">
+                                <p><strong>How it works:</strong> Set up automated swaps that execute at regular intervals. Perfect for DCA (Dollar Cost Averaging) strategies or regular rebalancing.</p>
+                                <ul>
+                                    <li><strong>Interval Trading:</strong> Execute swaps every X seconds (5-300 seconds)</li>
+                                    <li><strong>Consistent Parameters:</strong> Same token pair, amount, and settings for each swap</li>
+                                    <li><strong>Start/Stop Control:</strong> Easy to start and stop the automated process</li>
+                                    <li><strong>Real-time Monitoring:</strong> See results and status in real-time</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="strategy-item">
+                            <div class="strategy-header">
+                                <h5><i class="fas fa-cog"></i> Configuration Options</h5>
+                                <span class="strategy-difficulty easy">Easy</span>
+                            </div>
+                            <div class="strategy-description">
+                                <p><strong>Available Settings:</strong> Fine-tune your trading parameters for optimal performance.</p>
+                                <ul>
+                                    <li><strong>Token Pair:</strong> Select input and output tokens</li>
+                                    <li><strong>Swap Amount:</strong> Set the amount to swap each time</li>
+                                    <li><strong>Slippage Tolerance:</strong> Acceptable price movement (0.1% - 50%)</li>
+                                    <li><strong>Fee Tier:</strong> Choose pool fee tier (0.01%, 0.05%, 0.3%, 1%)</li>
+                                    <li><strong>Auto Interval:</strong> Set automated swap frequency (5-300 seconds)</li>
+                                    <li><strong>Min Amount Out Threshold:</strong> Only execute if expected output meets minimum</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-explanations">
+                        <h4><i class="fas fa-lightbulb"></i> Configuration Explanations</h4>
+                        <div class="config-explanations-grid">
+                            <div class="config-item-explanation">
+                                <h6>Token Selection</h6>
+                                <p>Choose your input and output tokens. Pool Shark 2 allows you to run a different token pair than Pool Shark 1.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Swap Amount</h6>
+                                <p>The amount of input token to swap in each transaction. Consider your balance and trading frequency.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Slippage Tolerance</h6>
+                                <p>Maximum acceptable price movement between quote and execution. Higher values allow for more price movement but may result in worse execution.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Fee Tier</h6>
+                                <p>Different pools have different fee structures. Choose based on your trading frequency and expected volume.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Auto Swap Interval</h6>
+                                <p>Shorter intervals mean more frequent trading but higher gas costs. Longer intervals reduce costs but may miss opportunities.</p>
+                            </div>
+                            <div class="config-item-explanation">
+                                <h6>Min Amount Out Threshold</h6>
+                                <p>Sets a minimum expected output amount. The automated swap will only execute if the quote's amountOut meets or exceeds this threshold. This helps avoid swaps during unfavorable market conditions.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="strategy-warnings">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Important Considerations</h4>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Market Risk:</strong> All trading involves risk. Prices can move against your position, resulting in losses.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Gas Fees:</strong> Each swap transaction incurs gas fees. Frequent automated trading will accumulate these costs.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Balance Requirements:</strong> Ensure you have sufficient balance in the input token for your configured swap amount.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Monitoring:</strong> While automated, it's recommended to monitor your strategy's performance and adjust parameters as needed.</p>
+                        </div>
+                        <div class="warning-item">
+                            <i class="fas fa-info-circle"></i>
+                            <p><strong>Multiple Instances:</strong> Pool Shark 2 runs independently from Pool Shark 1. Both can run simultaneously with different configurations.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
