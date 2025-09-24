@@ -259,11 +259,12 @@ export class PrimeCicadaStrategy {
    * Move to the next prime interval and toggle buy/sell direction
    */
   private moveToNextInterval(): void {
+    // Schedule the next swap using the current interval before moving to the next one
+    this.scheduleNextSwap();
+    
+    // Then move to the next interval and toggle buy/sell direction
     this.currentIntervalIndex = (this.currentIntervalIndex + 1) % this.PRIME_INTERVALS.length;
     this.isBuyingTokenB = !this.isBuyingTokenB; // Toggle between buying and selling
-
-    // Schedule the next swap (this will be called after the immediate first swap)
-    this.scheduleNextSwap();
   }
 
   /**
