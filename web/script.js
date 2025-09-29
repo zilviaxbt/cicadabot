@@ -3113,14 +3113,33 @@ class LeaderboardManager {
 class TrophyRoomManager {
     constructor() {
         this.trophyTransactions = [];
+        // Load PnL threshold from localStorage or default to 3
+        this.pnlThreshold = this.loadThreshold();
         this.initializeTrophyRoom();
     }
 
     initializeTrophyRoom() {
         // Listen for transaction updates from the main interface
         this.setupTransactionListener();
+        // Setup threshold control wiring
+        this.setupThresholdControl();
         this.updateTrophyRoom();
         this.updateGraveyard();
+    }
+
+    loadThreshold() {
+        const stored = localStorage.getItem('trophyPnlThreshold');
+        const value = stored !== null ? parseFloat(stored) : 3;
+        return isNaN(value) ? 3 : value;
+    }
+
+    saveThreshold(value) {
+        this.pnlThreshold = value;
+        try { localStorage.setItem('trophyPnlThreshold', String(value)); } catch (e) {}
+    }
+
+    getThreshold() {
+        return typeof this.pnlThreshold === 'number' && !isNaN(this.pnlThreshold) ? this.pnlThreshold : 3;
     }
 
     setupTransactionListener() {
@@ -3185,6 +3204,21 @@ class TrophyRoomManager {
 
     }
 
+    setupThresholdControl() {
+        const input = document.getElementById('trophyPnlThreshold');
+        if (!input) return;
+        // Initialize input with saved/default value
+        input.value = String(this.getThreshold());
+        // Listen for changes
+        input.addEventListener('change', () => {
+            const raw = parseFloat(input.value);
+            const next = isNaN(raw) || raw < 0 ? 0 : raw;
+            this.saveThreshold(next);
+            console.log(`Trophy Room threshold set to ${next}%`);
+            this.updateTrophyRoom();
+        });
+    }
+
     filterHighPerformingTransactions(transactions) {
         console.log(`Filtering ${transactions.length} transactions for Trophy Room`);
         console.log('Sample transaction data:', transactions[0]); // Log first transaction for debugging
@@ -3234,17 +3268,18 @@ class TrophyRoomManager {
             }
             
             // Extract the full signed value from PnL percentage (e.g., "+15.5%" -> 15.5, "-10.2%" -> -10.2)
-            const fullPnlMatch = tx.pnlPercentage.match(/^([+-]?)(\d+\.?\d*)/);
-            const pnlValue = fullPnlMatch ? parseFloat(fullPnlMatch[1] + fullPnlMatch[2]) : 0;
-            const isHighPerforming = pnlValue > 10;
+            const fullPnlMatch = tx.pnlPercentage.match(/^([+-]?(\d+\.?\d*))/);
+            const pnlValue = fullPnlMatch ? parseFloat(fullPnlMatch[1]) : 0;
+            const threshold = this.getThreshold();
+            const isHighPerforming = pnlValue > threshold;
             
             if (isHighPerforming) {
                 console.log(`✅ Trophy transaction found: ${tx.pnlPercentage} (${pnlValue}%) - ${tx.tokenIn} → ${tx.tokenOut} - Hash: ${tx.transactionHash || tx.hash}`);
             } else {
-                console.log(`❌ Transaction excluded: ${tx.pnlPercentage} (${pnlValue}%) - below 10% threshold`);
+                console.log(`❌ Transaction excluded: ${tx.pnlPercentage} (${pnlValue}%) - below ${threshold}% threshold`);
             }
             
-            return isHighPerforming; // Only include transactions with PnL > 10%
+            return isHighPerforming; // Only include transactions above configured threshold
         });
         
         console.log(`Found ${filtered.length} high-performing transactions out of ${transactions.length} total`);
@@ -3410,7 +3445,7 @@ class TrophyRoomManager {
         if (found) {
             console.log('Found transaction:', found);
             const isHighPerforming = this.filterHighPerformingTransactions([found]).length > 0;
-            console.log(`Is high performing (PnL > 10%): ${isHighPerforming}`);
+            console.log(`Is high performing (PnL > ${this.getThreshold()}%): ${isHighPerforming}`);
             return found;
         } else {
             console.log(`Transaction with hash ${hash} not found in current data`);
