@@ -1,10 +1,20 @@
 cicadabot -  idk ai wrote the readme and stuff i just thought cicadas using prime numbers to stay alive was kinda cool. mostly just dca's prime number intervals but also has some lunar cycle arbritrage functions as well as that was the original idea. everything is expiremental, use at your own risk. oh and the pnl shouldnt be trusted. if i had more time id probably make this a lot different but this was first time pushing anything besides hello world, already moving onto a bigger project idea
 
+Updates:
+Leaderboard - not working. Ended up making this on a seperate project.
+
+Trophy room - shows all trades with PnL greater than 3%
+
+Graveyard - shows all trades with a loss greater than 10%
+
+Poolshark - (1-3 working, 4-5 broken?) - this strategy just spams quotes into the low fee pool. A min amount out threshold can be set so that the quotes only execute if it's profitable. This tactic I discovered on accident with my Prime Cicada Interval Strategy. I was able to get insanely profitable quotes from the 0.05% fee pool and this gave me a huge lead right off the bat. Unfortunately, it stopped finding profitable quotes after the first couple days. I suspect it was another bot that was trading poorly and I was milking it to the last cent. 
+
 An advanced TypeScript trading bot for GalaSwap DEX with a unique **prime interval trading strategy** inspired by periodical cicadas. The bot trades on prime number intervals (3, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79 minutes), alternating between buying and selling tokens at each interval - much like how periodical cicadas emerge in prime number cycles.
 
-<img width="1070" height="1259" alt="image" src="https://github.com/user-attachments/assets/984230b9-567a-4469-86ae-a77fd07da106" />
+<img width="1274" height="1090" alt="image" src="https://github.com/user-attachments/assets/329d61de-5325-4df6-9328-a423b6019001" />
+<img width="1286" height="1076" alt="image" src="https://github.com/user-attachments/assets/8a2a0b74-20f2-4fcc-8329-354b04bd5fa6" />
+<img width="1274" height="1129" alt="image" src="https://github.com/user-attachments/assets/e1e35d35-5620-4b8a-afaf-bfcc715a0cd9" />
 
-<img width="552" height="967" alt="image" src="https://github.com/user-attachments/assets/847049be-92de-48f4-92dc-140fa1ba6081" />
 
 
 
