@@ -7,7 +7,7 @@ Trophy room - shows all trades with PnL greater than 3%
 
 Graveyard - shows all trades with a loss greater than 10%
 
-Poolshark - (1-3 working, 4-5 broken?) - this strategy just spams quotes into the low fee pool. A min amount out threshold can be set so that the quotes only execute if it's profitable. This tactic I discovered on accident with my Prime Cicada Interval Strategy. I was able to get insanely profitable quotes from the 0.05% fee pool and this gave me a huge lead right off the bat. Unfortunately, it stopped finding profitable quotes after the first couple days. I suspect it was another bot that was trading poorly and I was milking it to the last cent. 
+Poolshark - (1-3 working, 4-5 broken?) - this strategy just spams quotes into the low fee pool. A min amount out threshold can be set so that the quotes only execute if it's profitable. This tactic I discovered on accident with my Prime Cicada Interval Strategy. I was able to get insanely profitable quotes from the 0.05% fee pool and this gave me a huge lead right off the bat. Unfortunately, it stopped finding profitable quotes after the first couple days. I suspect it was another bot that was trading poorly and I was milking it to the last cent. The cool part was I could trade with just a dollar and make money. You can see in the screenshots below some of the big wins I got from doing this.
 
 An advanced TypeScript trading bot for GalaSwap DEX with a unique **prime interval trading strategy** inspired by periodical cicadas. The bot trades on prime number intervals (3, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79 minutes), alternating between buying and selling tokens at each interval - much like how periodical cicadas emerge in prime number cycles.
 
