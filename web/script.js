@@ -3105,7 +3105,6 @@ class TrophyRoomManager {
     getThreshold() {
         return typeof this.pnlThreshold === 'number' && !isNaN(this.pnlThreshold) ? this.pnlThreshold : 3;
     }
-
     setupTransactionListener() {
         // Set up a more reliable way to listen for transaction updates
         // We'll check for updates periodically and also hook into the refresh button
@@ -3182,7 +3181,6 @@ class TrophyRoomManager {
             this.updateTrophyRoom();
         });
     }
-
     filterHighPerformingTransactions(transactions) {
         console.log(`Filtering ${transactions.length} transactions for Trophy Room`);
         console.log('Sample transaction data:', transactions[0]); // Log first transaction for debugging

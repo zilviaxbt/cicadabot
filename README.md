@@ -1,6 +1,12 @@
-cicada bot -  idk man AI wrote the readme and stuff i just thought cicadas using prime numbers to stay alive was kinda cool. mostly does prime number intervals but has somewhat working lunar cycle arbritrage functions as that was the original idea until i decided cicadas were cooler. 
+cicadabot -  idk ai wrote the readme and stuff i just thought cicadas using prime numbers to stay alive was kinda cool. mostly just dca's prime number intervals but also has some lunar cycle arbritrage functions as well as that was the original idea. everything is expiremental, use at your own risk. oh and the pnl shouldnt be trusted. if i had more time id probably make this a lot different but this was first time pushing anything besides hello world, already moving onto a bigger project idea
 
 An advanced TypeScript trading bot for GalaSwap DEX with a unique **prime interval trading strategy** inspired by periodical cicadas. The bot trades on prime number intervals (3, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79 minutes), alternating between buying and selling tokens at each interval - much like how periodical cicadas emerge in prime number cycles.
+
+<img width="1070" height="1259" alt="image" src="https://github.com/user-attachments/assets/984230b9-567a-4469-86ae-a77fd07da106" />
+
+<img width="552" height="967" alt="image" src="https://github.com/user-attachments/assets/847049be-92de-48f4-92dc-140fa1ba6081" />
+
+
 
 ## Features
 
