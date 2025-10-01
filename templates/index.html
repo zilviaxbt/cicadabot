@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --fg: #e6e8ee;
+      --muted: #9aa3b2;
+      --green: #22c55e;
+      --red: #ef4444;
+      --card: #121826;
+      --border: #1f2937;
+      --accent: #3b82f6;
+      --sticky: #0b0f17f0;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px 64px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .btn {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--fg);
+      border-radius: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .badge {
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: #101522;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: var(--sticky);
+      backdrop-filter: blur(6px);
+    }
+    th, td { text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .owner { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .meta { display: flex; gap: 12px; align-items: center; color: var(--muted); font-size: 12px; }
+  </style>
+  <script>
+    // Simple auto-refresh price every 60s without reloading CSVs
+    setInterval(() => {
+      // No-op: page recalculates on server; this placeholder avoids heavy polling
+    }, 60000);
+  </script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>{{ title }}</h1>
+          <div class="meta">
+            <span>GALA price: ${{ gala_price|fmt_usd }}</span>
+            {% if balances_mtime %}
+              <span>Balances updated: {{ balances_mtime }}</span>
+            {% endif %}
+            {% if not has_starting %}
+              <span class="badge">No startingbalances.csv — add to enable change/%</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="controls">
+          <form method="POST" action="{{ url_for('refresh') }}">
+            <button class="btn" type="submit">Refresh current balances</button>
+          </form>
+        </div>
+      </header>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Owner</th>
+              <th>GALA</th>
+              <th>GUSDC</th>
+              <th>GUSDT</th>
+              <th>Starting Total (USD)</th>
+              <th>Current Total (USD)</th>
+              <th>Change (USD)</th>
+              <th>% Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in leaderboard %}
+            <tr>
+              <td>{{ row.rank }}</td>
+              <td class="owner">{{ row.owner }}</td>
+              <td>{{ row.gala|fmt_gala }}</td>
+              <td>{{ row.gusdc|fmt_token }}</td>
+              <td>{{ row.gusdt|fmt_token }}</td>
+              <td>${{ row.starting_total|fmt_usd }}</td>
+              <td>${{ row.current_total|fmt_usd }}</td>
+              {% set cls = 'pos' if row.change >= 0 else 'neg' %}
+              <td class="{{ cls }}">${{ row.change|fmt_usd }}</td>
+              <td class="{{ cls }}">{% if row.pct_change is not none %}{{ row.pct_change|fmt_pct }}%{% else %}-{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
+
+
+

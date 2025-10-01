@@ -1,10 +1,113 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const fs = require('fs');
+const child_process = require('child_process');
 const { CicadaBot } = require('../dist/src/CicadaBot');
 const { loadConfig, validateConfig } = require('../dist/src/utils/config');
 const { Logger } = require('../dist/src/utils/logger');
 const { COMMON_TOKENS, FEE_TIERS } = require('../dist/src/constants/tokens');
+
+// ---------------- Leaderboard helpers ----------------
+const candidatePaths = (filename) => [
+    path.join(process.cwd(), filename),
+    path.join(process.cwd(), 'data', filename),
+    path.join(process.cwd(), 'web', 'data', filename)
+];
+
+function resolveExistingPath(filename) {
+    const candidates = candidatePaths(filename);
+    for (const p of candidates) {
+        if (fs.existsSync(p)) return p;
+    }
+    return candidates[0];
+}
+
+let BALANCES_CSV = resolveExistingPath('balances.csv');
+let STARTING_BALANCES_CSV = resolveExistingPath('startingbalances.csv');
+const COINGECKO_GALA_PRICE_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=gala&vs_currencies=usd';
+const PRICE_CACHE_TTL_MS = 60 * 1000;
+
+let galaPriceCache = { price: 0, ts: 0 };
+
+function safeParseFloat(value) {
+    if (value === undefined || value === null) return 0.0;
+    const s = String(value).trim();
+    if (!s || s.toLowerCase() === 'na' || s.toLowerCase() === 'nan' || s.toLowerCase() === 'none' || s.toLowerCase() === 'null') {
+        return 0.0;
+    }
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0.0;
+}
+
+function readCsvToMap(filePath) {
+    const result = new Map();
+    if (!fs.existsSync(filePath)) return result;
+    const content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (lines.length === 0) return result;
+    const header = lines[0].split(',').map(h => h.trim());
+    const idx = {
+        owner: header.indexOf('owner'),
+        GALA: header.indexOf('GALA'),
+        GUSDC: header.indexOf('GUSDC'),
+        GUSDT: header.indexOf('GUSDT')
+    };
+    for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        const owner = (parts[idx.owner] || '').trim();
+        if (!owner) continue;
+        result.set(owner, {
+            GALA: safeParseFloat(parts[idx.GALA]),
+            GUSDC: safeParseFloat(parts[idx.GUSDC]),
+            GUSDT: safeParseFloat(parts[idx.GUSDT])
+        });
+    }
+    return result;
+}
+
+async function fetchGalaPrice() {
+    const now = Date.now();
+    if (now - galaPriceCache.ts < PRICE_CACHE_TTL_MS) {
+        return galaPriceCache.price;
+    }
+    try {
+        const fetch = require('node-fetch');
+        const resp = await fetch(COINGECKO_GALA_PRICE_URL, { timeout: 10000 });
+        const data = await resp.json();
+        const price = safeParseFloat(data?.gala?.usd);
+        galaPriceCache = { price, ts: now };
+        return price;
+    } catch (e) {
+        return galaPriceCache.price || 0.0;
+    }
+}
+
+function computeLeaderboard(currentMap, startingMap, galaPrice) {
+    const owners = new Set([...currentMap.keys(), ...startingMap.keys()]);
+    const rows = [];
+    for (const owner of owners) {
+        const c = currentMap.get(owner) || { GALA: 0, GUSDC: 0, GUSDT: 0 };
+        const s = startingMap.get(owner) || { GALA: 0, GUSDC: 0, GUSDT: 0 };
+        const current_total = c.GALA * galaPrice + c.GUSDC + c.GUSDT;
+        const starting_total = s.GALA * galaPrice + s.GUSDC + s.GUSDT;
+        const change = current_total - starting_total;
+        const pct_change = starting_total > 0 ? (change / starting_total) * 100 : null;
+        rows.push({
+            owner,
+            gala: c.GALA,
+            gusdc: c.GUSDC,
+            gusdt: c.GUSDT,
+            starting_total,
+            current_total,
+            change,
+            pct_change
+        });
+    }
+    rows.sort((a, b) => b.current_total - a.current_total);
+    rows.forEach((row, idx) => row.rank = idx + 1);
+    return rows;
+}
 
 class WebServer {
     constructor() {
@@ -983,6 +1086,51 @@ class WebServer {
                 success: true,
                 tokens: COMMON_TOKENS,
                 feeTiers: FEE_TIERS
+            });
+        });
+
+        // Leaderboard endpoints
+        this.app.get('/api/leaderboard', async (req, res) => {
+            try {
+                // Resolve paths on each request in case files are created later
+                BALANCES_CSV = resolveExistingPath('balances.csv');
+                STARTING_BALANCES_CSV = resolveExistingPath('startingbalances.csv');
+                const galaPrice = await fetchGalaPrice();
+                const current = readCsvToMap(BALANCES_CSV);
+                const starting = readCsvToMap(STARTING_BALANCES_CSV);
+                const leaderboard = computeLeaderboard(current, starting, galaPrice);
+                res.json({ success: true, galaPrice, leaderboard, paths: { balances: BALANCES_CSV, starting: STARTING_BALANCES_CSV } });
+            } catch (error) {
+                Logger.error('Leaderboard API error', error);
+                res.status(500).json({ success: false, error: 'Failed to compute leaderboard' });
+            }
+        });
+
+        this.app.post('/api/leaderboard/refresh', async (req, res) => {
+            try {
+                const python = process.env.PYTHON || 'python';
+                const proc = child_process.spawn(python, ['fetch_galachain_balances.py'], {
+                    cwd: process.cwd(),
+                    stdio: 'ignore',
+                    detached: true
+                });
+                proc.unref();
+                res.json({ success: true, message: 'Refresh started' });
+            } catch (error) {
+                Logger.error('Leaderboard refresh error', error);
+                res.status(500).json({ success: false, error: 'Failed to start refresh' });
+            }
+        });
+
+        // Optional: simple debug endpoint to check which file paths are used
+        this.app.get('/api/leaderboard/debug', (req, res) => {
+            BALANCES_CSV = resolveExistingPath('balances.csv');
+            STARTING_BALANCES_CSV = resolveExistingPath('startingbalances.csv');
+            res.json({
+                balancesCsvPath: BALANCES_CSV,
+                startingBalancesCsvPath: STARTING_BALANCES_CSV,
+                balancesExists: fs.existsSync(BALANCES_CSV),
+                startingExists: fs.existsSync(STARTING_BALANCES_CSV)
             });
         });
 

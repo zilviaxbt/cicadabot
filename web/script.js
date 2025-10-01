@@ -2978,61 +2978,14 @@ class LeaderboardManager {
     }
 
     initializeLeaderboard() {
-        // Load sample data for demonstration
-        this.loadSampleData();
-        this.updateLeaderboard();
+        this.refreshFromAPI();
+        const refreshBtn = document.getElementById('refreshLeaderboardBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.triggerRefresh());
+        }
     }
 
-    loadSampleData() {
-        // Sample leaderboard data - in a real app, this would come from an API
-        this.leaderboardData = [
-            {
-                rank: 1,
-                traderName: "CryptoWhale",
-                traderAddress: "0x1234...5678",
-                volume: "$1,234,567",
-                profit: "+$45,678",
-                profitClass: "positive",
-                winRate: "87.5%"
-            },
-            {
-                rank: 2,
-                traderName: "MoonTrader",
-                traderAddress: "0x2345...6789",
-                volume: "$987,654",
-                profit: "+$32,456",
-                profitClass: "positive",
-                winRate: "82.3%"
-            },
-            {
-                rank: 3,
-                traderName: "DiamondHands",
-                traderAddress: "0x3456...7890",
-                volume: "$765,432",
-                profit: "+$28,901",
-                profitClass: "positive",
-                winRate: "79.8%"
-            },
-            {
-                rank: 4,
-                traderName: "DeFiMaster",
-                traderAddress: "0x4567...8901",
-                volume: "$654,321",
-                profit: "+$23,456",
-                profitClass: "positive",
-                winRate: "76.2%"
-            },
-            {
-                rank: 5,
-                traderName: "TokenHunter",
-                traderAddress: "0x5678...9012",
-                volume: "$543,210",
-                profit: "-$1,234",
-                profitClass: "negative",
-                winRate: "68.9%"
-            }
-        ];
-    }
+    // removed loadSampleData()
 
     updateLeaderboard() {
         this.updateStats();
@@ -3041,13 +2994,10 @@ class LeaderboardManager {
 
     updateStats() {
         const totalTraders = this.leaderboardData.length;
-        const totalVolume = this.leaderboardData.reduce((sum, trader) => {
-            return sum + parseFloat(trader.volume.replace(/[$,]/g, ''));
-        }, 0);
-        const topPerformer = this.leaderboardData.length > 0 ? this.leaderboardData[0].traderName : '-';
-
+        const totalCurrent = this.leaderboardData.reduce((sum, row) => sum + (row.current_total || 0), 0);
+        const topPerformer = this.leaderboardData.length > 0 ? this.leaderboardData[0].owner : '-';
         document.getElementById('totalTraders').textContent = totalTraders;
-        document.getElementById('totalVolume').textContent = `$${totalVolume.toLocaleString()}`;
+        document.getElementById('totalVolume').textContent = `$${totalCurrent.toFixed(2)}`;
         document.getElementById('topPerformer').textContent = topPerformer;
     }
 
@@ -3059,21 +3009,24 @@ class LeaderboardManager {
             return;
         }
 
-        entriesContainer.innerHTML = this.leaderboardData.map(trader => `
-            <div class="leaderboard-entry rank-${trader.rank}">
-                <span class="rank rank-${trader.rank}">${trader.rank}</span>
+        entriesContainer.innerHTML = this.leaderboardData.map(row => {
+            const changeClass = (row.change || 0) >= 0 ? 'positive' : 'negative';
+            const pct = row.pct_change == null ? '-' : `${row.pct_change.toFixed(2)}%`;
+            return `
+            <div class="leaderboard-entry rank-${row.rank}">
+                <span class="rank rank-${row.rank}">${row.rank}</span>
                 <div class="trader-info">
-                    <div class="trader-avatar">${trader.traderName.charAt(0)}</div>
+                    <div class="trader-avatar">${row.owner.slice(0,1)}</div>
                     <div>
-                        <div class="trader-name">${trader.traderName}</div>
-                        <div class="trader-address">${trader.traderAddress}</div>
+                        <div class="trader-name">${row.owner}</div>
+                        <div class="trader-address">GALA ${row.gala.toFixed(8)} | GUSDC ${row.gusdc.toFixed(6)} | GUSDT ${row.gusdt.toFixed(6)}</div>
                     </div>
                 </div>
-                <span class="volume">${trader.volume}</span>
-                <span class="profit ${trader.profitClass}">${trader.profit}</span>
-                <span class="winrate">${trader.winRate}</span>
-            </div>
-        `).join('');
+                <span class="volume">$${(row.current_total || 0).toFixed(6)}</span>
+                <span class="profit ${changeClass}">$${(row.change || 0).toFixed(6)}</span>
+                <span class="winrate">${pct}</span>
+            </div>`;
+        }).join('');
     }
 
     // Method to add new trader data (for real-time updates)
@@ -3093,18 +3046,29 @@ class LeaderboardManager {
         this.updateLeaderboard();
     }
 
-    // Method to refresh leaderboard data from API
     async refreshFromAPI() {
         try {
-            // In a real implementation, this would fetch from your API
-            // const response = await fetch('/api/leaderboard');
-            // const data = await response.json();
-            // this.leaderboardData = data;
-            // this.updateLeaderboard();
-            
-            console.log('Leaderboard data refreshed');
+            const resp = await fetch('/api/leaderboard');
+            const data = await resp.json();
+            if (data && data.success) {
+                this.leaderboardData = data.leaderboard || [];
+                // If no data, show a helpful hint in the UI console
+                if (this.leaderboardData.length === 0) {
+                    console.warn('No leaderboard rows found. Ensure balances.csv exists in ./, ./data/, or ./web/data/.');
+                }
+                this.updateLeaderboard();
+            }
         } catch (error) {
-            console.error('Failed to refresh leaderboard:', error);
+            console.error('Failed to load leaderboard:', error);
+        }
+    }
+
+    async triggerRefresh() {
+        try {
+            await fetch('/api/leaderboard/refresh', { method: 'POST' });
+            setTimeout(() => this.refreshFromAPI(), 4000);
+        } catch (e) {
+            console.error('Failed to trigger refresh', e);
         }
     }
 }
@@ -3618,3 +3582,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 2000); // Wait for transaction data to load
 });
+

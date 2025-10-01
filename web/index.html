@@ -41,9 +41,14 @@
         <section class="leaderboard-panel collapsible-panel">
             <div class="panel-header collapsible-header">
                 <h2><i class="fas fa-medal"></i> Leaderboard</h2>
-                <button class="collapse-toggle" onclick="toggleCollapsible('leaderboard')">
-                    <i class="fas fa-chevron-up"></i>
-                </button>
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <button id="refreshLeaderboardBtn" class="btn btn-secondary" title="Refresh current balances">
+                        <i class="fas fa-sync-alt"></i> Refresh current balances
+                    </button>
+                    <button class="collapse-toggle" onclick="toggleCollapsible('leaderboard')">
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                </div>
             </div>
             <div id="leaderboardContent" class="collapsible-content collapsed">
                 <div class="leaderboard-content">
