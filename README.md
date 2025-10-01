@@ -1,4 +1,4 @@
-cicadabot -  idk ai wrote the readme and stuff i just thought cicadas using prime numbers to stay alive was kinda cool. mostly just dca's prime number intervals but also has some lunar cycle arbritrage functions as well as that was the original idea. everything is expiremental, use at your own risk. oh and the pnl shouldnt be trusted. if i had more time id probably make this a lot different but this was first time pushing anything besides hello world, already moving onto a bigger project idea
+cicadabot -  idk ai wrote the readme and stuff i just thought cicadas using prime numbers to stay alive was kinda cool. mostly just dca's prime number intervals but also has some lunar cycle arbritrage functions as well as that was the original idea. everything is expiremental, use at your own risk. if i had more time id probably make this a lot different but this was first time pushing anything besides hello world, already moving onto a bigger project idea
 
 Updates:
 Leaderboard - not working. Ended up making this on a seperate project.
